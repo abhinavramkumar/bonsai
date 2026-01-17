@@ -9,8 +9,30 @@ import { setupCommand } from "./commands/setup.js";
 import { listCommand } from "./commands/list.js";
 import { configCommand } from "./commands/config.js";
 import { completionsCommand } from "./commands/completions.js";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-const VERSION = "0.1.0";
+/**
+ * Get version from package.json
+ * Reads from project root (works in both dev and compiled binary contexts)
+ */
+function getVersion(): string {
+  try {
+    // Try to read from project root
+    const packageJsonPath = join(process.cwd(), "package.json");
+    const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    if (pkg.version) {
+      return pkg.version;
+    }
+  } catch {
+    // Fallback if package.json can't be read
+  }
+
+  // Fallback version (should match package.json, but won't be used in normal operation)
+  return "0.1.0";
+}
+
+const VERSION = getVersion();
 
 /**
  * Display help message
