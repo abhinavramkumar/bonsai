@@ -1,0 +1,6 @@
+node_modules
+dist
+*.lock
+bun.lock
+.git
+*.log

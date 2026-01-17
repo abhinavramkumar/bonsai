@@ -15,11 +15,15 @@
     "build:linux-arm64": "bun build ./src/cli.ts --compile --target=bun-linux-arm64 --outfile ./dist/bonsai-linux-arm64",
     "build:all": "bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:linux-x64 && bun run build:linux-arm64",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json}\"",
+    "hooks:install": "./scripts/install-hooks.sh",
     "link": "sudo ln -sf $(pwd)/dist/bonsai /usr/local/bin/bonsai && echo '✓ Linked to /usr/local/bin/bonsai'",
     "unlink": "rm -f /usr/local/bin/bonsai && echo '✓ Removed /usr/local/bin/bonsai'"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prettier": "^3.8.0"
   },
   "peerDependencies": {
     "typescript": "^5"

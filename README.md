@@ -296,8 +296,24 @@ Uncommitted changes detected:
 bun run dev -- --help    # Run without compiling
 bun run build            # Compile to ./dist/bonsai
 bun run typecheck        # Type check
+bun run format           # Format code with Prettier
+bun run format:check     # Check code formatting
+bun run hooks:install    # Install git pre-commit hook
 bun run link             # Symlink to /usr/local/bin (for testing)
 bun run unlink           # Remove symlink
+```
+
+### Git Hooks
+
+A pre-commit hook automatically formats staged files before each commit. Install it with:
+
+```bash
+bun run hooks:install
+```
+
+Or manually:
+```bash
+./scripts/install-hooks.sh
 ```
 
 ## Architecture
