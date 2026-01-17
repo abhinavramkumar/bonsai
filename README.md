@@ -1,7 +1,7 @@
 # 🎋 bonsai
 
 <div align="center">
-  <img src="assets/ai-art-sample-1.png" alt="bonsai logo" width="200"/>
+  <img src="assets/ai-art-sample-2.png" alt="bonsai logo" width="600"/>
 </div>
 
 > Carefully cultivate your branches.
