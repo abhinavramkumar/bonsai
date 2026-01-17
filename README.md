@@ -1,5 +1,9 @@
 # 🎋 bonsai
 
+<div align="center">
+  <img src="assets/ai-art-sample-1.png" alt="bonsai logo" width="200"/>
+</div>
+
 > Carefully cultivate your branches.
 
 A Git worktree workflow CLI that lets you work on multiple branches simultaneously without the context-switching pain.
