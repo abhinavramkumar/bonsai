@@ -2,7 +2,38 @@
 
 This guide walks you through creating a GitHub release with platform-specific binaries.
 
-## Prerequisites
+## Automated Releases (Recommended)
+
+Releases are automatically created when a PR is merged to `main` via GitHub Actions.
+
+### How It Works
+
+1. **Create a PR** targeting `main`
+2. **Add a label** to control the version bump:
+   - `major` - Bumps major version (e.g., 1.0.0 → 2.0.0)
+   - `minor` - Bumps minor version (e.g., 1.0.0 → 1.1.0)
+   - `patch` - Bumps patch version (e.g., 1.0.0 → 1.0.1) - **default if no label**
+3. **Merge the PR** - The workflow will:
+   - Build binaries for all platforms
+   - Bump the version in `package.json`
+   - Create a git tag
+   - Create a GitHub release with all binaries attached
+
+### Example
+
+To release a minor version bump:
+1. Create PR with your changes
+2. Add the `minor` label to the PR
+3. Merge the PR
+4. The workflow automatically creates the release
+
+**Note:** If no label is present, the workflow defaults to a `patch` version bump.
+
+## Manual Releases
+
+If you need to create a release manually, follow these steps:
+
+### Prerequisites
 
 - Bun installed
 - Git repository set up

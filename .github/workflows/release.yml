@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version bump type
+        id: version-bump
+        run: |
+          LABELS="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+          echo "PR labels: $LABELS"
+
+          if echo "$LABELS" | grep -qi "major"; then
+            BUMP_TYPE="major"
+          elif echo "$LABELS" | grep -qi "minor"; then
+            BUMP_TYPE="minor"
+          else
+            BUMP_TYPE="patch"
+          fi
+
+          echo "bump-type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "Using $BUMP_TYPE version bump"
+
+      - name: Get current version
+        id: current-version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Bump version
+        run: |
+          BUMP_TYPE="${{ steps.version-bump.outputs.bump-type }}"
+          npm version $BUMP_TYPE --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "New version: $NEW_VERSION"
+
+      - name: Build binaries
+        run: bun run build:all
+
+      - name: Verify binaries
+        run: |
+          BINARIES=(
+            "dist/bonsai-darwin-x86_64"
+            "dist/bonsai-darwin-arm64"
+            "dist/bonsai-linux-x86_64"
+            "dist/bonsai-linux-arm64"
+          )
+
+          for binary in "${BINARIES[@]}"; do
+            if [ ! -f "$binary" ]; then
+              echo "Error: Binary not found: $binary"
+              exit 1
+            fi
+            echo "✓ $binary ($(du -h "$binary" | cut -f1))"
+          done
+
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
+          git push origin HEAD:main
+
+      - name: Create git tag
+        run: |
+          TAG="v${{ env.NEW_VERSION }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          BUMP_TYPE="${{ steps.version-bump.outputs.bump-type }}"
+
+          NOTES="## Release ${{ env.TAG }}"
+          NOTES="$NOTES\n\n**Version bump:** $BUMP_TYPE"
+          NOTES="$NOTES\n\n### Changes"
+          NOTES="$NOTES\n\n**$PR_TITLE**"
+
+          if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
+            NOTES="$NOTES\n\n$PR_BODY"
+          fi
+
+          NOTES="$NOTES\n\n### Binaries"
+          NOTES="$NOTES\n- macOS Intel (darwin-x86_64)"
+          NOTES="$NOTES\n- macOS Apple Silicon (darwin-arm64)"
+          NOTES="$NOTES\n- Linux x64 (linux-x86_64)"
+          NOTES="$NOTES\n- Linux ARM64 (linux-arm64)"
+
+          echo "$NOTES" > /tmp/release-notes.md
+          echo "Release notes generated"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+          body_path: /tmp/release-notes.md
+          files: |
+            dist/bonsai-darwin-x86_64
+            dist/bonsai-darwin-arm64
+            dist/bonsai-linux-x86_64
+            dist/bonsai-linux-arm64
+          draft: false
+          prerelease: false
