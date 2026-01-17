@@ -1,0 +1,27 @@
+{
+  "name": "bonsai",
+  "version": "1.0.0",
+  "description": "Git worktree workflow CLI - carefully cultivate your branches",
+  "type": "module",
+  "bin": {
+    "bonsai": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build ./src/cli.ts --compile --outfile ./dist/bonsai",
+    "typecheck": "tsc --noEmit",
+    "link": "sudo ln -sf $(pwd)/dist/bonsai /usr/local/bin/bonsai && echo '✓ Linked to /usr/local/bin/bonsai'",
+    "unlink": "rm -f /usr/local/bin/bonsai && echo '✓ Removed /usr/local/bin/bonsai'"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "picocolors": "^1.1.1",
+    "smol-toml": "^1.6.0"
+  }
+}
