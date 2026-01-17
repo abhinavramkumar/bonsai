@@ -34,6 +34,16 @@ Each worktree is a fully independent working directory with its own `node_module
 
 ## Installation
 
+### Quick install (recommended)
+
+Install the latest release binary directly:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install.sh | sh
+```
+
+Or download manually from [GitHub Releases](https://github.com/abhinavramkumar/bonsai/releases).
+
 ### From source (requires [Bun](https://bun.sh))
 
 ```bash

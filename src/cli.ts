@@ -10,7 +10,7 @@ import { listCommand } from "./commands/list.js";
 import { configCommand } from "./commands/config.js";
 import { completionsCommand } from "./commands/completions.js";
 
-const VERSION = "1.0.0";
+const VERSION = "0.1.0";
 
 /**
  * Display help message
