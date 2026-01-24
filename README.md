@@ -34,7 +34,7 @@ Each worktree is a fully independent working directory with its own `node_module
 
 ## Installation
 
-### Quick install (recommended)
+### Quick install
 
 Install the latest release binary directly:
 
@@ -43,6 +43,12 @@ curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install
 ```
 
 Or download manually from [GitHub Releases](https://github.com/abhinavramkumar/bonsai/releases).
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew install abhinavramkumar/bonsai/bonsai
+```
 
 ### From source (requires [Bun](https://bun.sh))
 
