@@ -1,6 +1,7 @@
 import { homedir } from "os";
 import { join, basename, dirname } from "path";
 import { mkdir, readdir } from "fs/promises";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "smol-toml";
 import { $ } from "bun";
 import type { EditorName } from "./editor.ts";
@@ -193,21 +194,56 @@ export async function listAllConfigPaths(): Promise<string[]> {
   }
 }
 
+/** list all config file paths for merge. */
+function listAllConfigPathsSync(): string[] {
+  const dir = getBonsaiConfigDir();
+  try {
+    const names = readdirSync(dir, { withFileTypes: true });
+    return names
+      .filter((e) => e.isFile() && e.name.endsWith(".toml"))
+      .map((e) => join(dir, e.name));
+  } catch {
+    return [];
+  }
+}
+
+/** load configuration from a path for merge. */
+function loadConfigFromPathSync(
+  path: string
+): (Partial<BonsaiConfig> & Record<string, unknown>) | null {
+  try {
+    if (!existsSync(path)) return null;
+    const content = readFileSync(path, "utf-8");
+    return parse(content) as unknown as Partial<BonsaiConfig> & Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/** Sync write for merge (avoids async hang in upgrade path). */
+function saveConfigToPathSync(path: string, config: BonsaiConfig): void {
+  const configDir = getBonsaiConfigDir();
+  mkdirSync(configDir, { recursive: true });
+  const content = stringify(config);
+  writeFileSync(path, content, "utf-8");
+}
+
 /**
  * Merge preset defaults into every existing config file. Non-destructive:
  * only adds missing keys. Call after upgrade so new defaults are applied.
+ * Uses sync I/O so it completes immediately and never hangs on async fs.
  * Skips files that don't look like a valid bonsai config (missing repo.path).
  * Ignores write errors (e.g. EPERM) so upgrade can still exit.
  */
 export async function mergeDefaultsIntoAllConfigs(): Promise<void> {
-  const paths = await listAllConfigPaths();
+  const paths = listAllConfigPathsSync();
   for (const configPath of paths) {
     try {
-      const parsed = await loadConfigFromPath(configPath);
+      const parsed = loadConfigFromPathSync(configPath);
       if (!parsed?.repo?.path) continue;
       const { config, updated } = mergeConfigWithDefaults(parsed);
       if (updated && config.repo?.path) {
-        await saveConfigToPath(configPath, config);
+        saveConfigToPathSync(configPath, config);
       }
     } catch {
       // Skip if we can't read or write (e.g. permissions); don't block upgrade
