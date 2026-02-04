@@ -2,13 +2,6 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { initCommand } from "./commands/init.js";
-import { growCommand } from "./commands/grow.js";
-import { pruneCommand } from "./commands/prune.js";
-import { setupCommand } from "./commands/setup.js";
-import { listCommand } from "./commands/list.js";
-import { configCommand } from "./commands/config.js";
-import { completionsCommand } from "./commands/completions.js";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -55,6 +48,7 @@ ${pc.bold("Commands:")}
   ${pc.cyan("setup")}             Run setup commands in current worktree
   ${pc.cyan("config")}            Open config file in $EDITOR
   ${pc.cyan("completions")}       Generate shell completions
+  ${pc.cyan("upgrade")}           Install or upgrade to latest release
 
 ${pc.bold("Options:")}
   ${pc.dim("-h, --help")}        Show this help message
@@ -102,16 +96,18 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  if (command === "-v" || command === "--version") {
+  if (command === "-v" || command === "--version" || command === "version") {
     showVersion();
     process.exit(0);
   }
 
-  // Route commands
+  // Route commands (dynamic import so --version/--help never load config or git)
   switch (command) {
-    case "init":
+    case "init": {
+      const { initCommand } = await import("./commands/init.js");
       await initCommand();
       break;
+    }
 
     case "grow":
     case "add":
@@ -121,6 +117,7 @@ async function main(): Promise<void> {
         p.cancel("Missing branch name. Usage: bonsai grow <branch-name>");
         process.exit(1);
       }
+      const { growCommand } = await import("./commands/grow.js");
       await growCommand(branchName);
       break;
     }
@@ -133,26 +130,40 @@ async function main(): Promise<void> {
         p.cancel("Missing branch name. Usage: bonsai prune <branch-name>");
         process.exit(1);
       }
+      const { pruneCommand } = await import("./commands/prune.js");
       await pruneCommand(branchName);
       break;
     }
 
-    case "setup":
+    case "setup": {
+      const { setupCommand } = await import("./commands/setup.js");
       await setupCommand();
       break;
+    }
 
     case "list":
-    case "ls":
+    case "ls": {
+      const { listCommand } = await import("./commands/list.js");
       await listCommand();
       break;
+    }
 
-    case "config":
+    case "config": {
+      const { configCommand } = await import("./commands/config.js");
       await configCommand();
       break;
+    }
 
     case "completions": {
       const shell = args[1];
+      const { completionsCommand } = await import("./commands/completions.js");
       await completionsCommand(shell);
+      break;
+    }
+
+    case "upgrade": {
+      const { upgradeCommand } = await import("./commands/upgrade.js");
+      await upgradeCommand();
       break;
     }
 

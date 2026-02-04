@@ -42,7 +42,7 @@ Install the latest release binary directly:
 curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install.sh | sh
 ```
 
-Or download manually from [GitHub Releases](https://github.com/abhinavramkumar/bonsai/releases).
+Or download manually from [GitHub Releases](https://github.com/abhinavramkumar/bonsai/releases). To upgrade later: `bonsai upgrade`.
 
 ### Homebrew (macOS/Linux)
 
@@ -112,6 +112,7 @@ bonsai prune feature/auth      # Safely removes worktree (prompts if dirty)
 | `bonsai setup` | | Re-run setup commands in current worktree |
 | `bonsai config` | | Open config in `$EDITOR` |
 | `bonsai completions` | | Install shell integration |
+| `bonsai upgrade` | | Install or upgrade to latest release |
 
 ## How `grow` Works
 
@@ -311,6 +312,12 @@ bun run format:check     # Check code formatting
 bun run hooks:install    # Install git pre-commit hook
 bun run link             # Symlink to /usr/local/bin (for testing)
 bun run unlink           # Remove symlink
+```
+
+To see where the upgrade command is in its flow (if it seems to hang), run:
+
+```bash
+BONSAI_UPGRADE_DEBUG=1 bonsai upgrade
 ```
 
 ### Git Hooks

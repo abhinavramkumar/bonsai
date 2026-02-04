@@ -1,6 +1,6 @@
 import { homedir } from "os";
 import { join, basename, dirname } from "path";
-import { mkdir } from "fs/promises";
+import { mkdir, readdir } from "fs/promises";
 import { parse, stringify } from "smol-toml";
 import { $ } from "bun";
 import type { EditorName } from "./editor.ts";
@@ -21,6 +21,64 @@ export interface BonsaiConfig {
   setup: {
     /** Array of shell commands to run after creating worktree */
     commands: string[];
+  };
+}
+
+/**
+ * Preset defaults for optional config keys. Add new keys here when introducing
+ * new options; they will be merged into existing configs non-destructively
+ * (only missing keys are added, existing values are never overwritten).
+ */
+/** Optional keys only; used for non-destructive merge into existing configs. */
+export const DEFAULT_CONFIG = {
+  repo: { main_branch: "main" },
+  editor: { name: "cursor" },
+  setup: { commands: [] },
+} as unknown as Partial<BonsaiConfig>;
+
+/**
+ * Deep-merge default values into target. Only sets keys that are missing
+ * (undefined); never overwrites existing values. Mutates target.
+ */
+function defaultsDeep(
+  target: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+  changed: { value: boolean }
+): void {
+  for (const key of Object.keys(defaults)) {
+    const def = defaults[key];
+    const cur = target[key];
+    if (cur === undefined) {
+      target[key] =
+        def !== null && typeof def === "object" && !Array.isArray(def) ? { ...def } : def;
+      changed.value = true;
+    } else if (
+      cur !== null &&
+      typeof cur === "object" &&
+      !Array.isArray(cur) &&
+      def !== null &&
+      typeof def === "object" &&
+      !Array.isArray(def)
+    ) {
+      defaultsDeep(cur as Record<string, unknown>, def as Record<string, unknown>, changed);
+    }
+  }
+}
+
+/**
+ * Merge preset defaults into a partial config. Returns full config and whether
+ * any keys were added (so caller can persist).
+ */
+export function mergeConfigWithDefaults(parsed: Partial<BonsaiConfig> & Record<string, unknown>): {
+  config: BonsaiConfig;
+  updated: boolean;
+} {
+  const changed = { value: false };
+  const merged = JSON.parse(JSON.stringify(parsed)) as Record<string, unknown>;
+  defaultsDeep(merged, DEFAULT_CONFIG as Record<string, unknown>, changed);
+  return {
+    config: merged as unknown as BonsaiConfig,
+    updated: changed.value,
   };
 }
 
@@ -64,8 +122,9 @@ export async function configExists(repoPath: string): Promise<boolean> {
 }
 
 /**
- * Load config for a repo
- * Returns null if config doesn't exist
+ * Load config for a repo. Merges in preset defaults for any missing keys and
+ * writes back if anything was added (non-destructive upgrade).
+ * Returns null if config doesn't exist.
  */
 export async function loadConfig(repoPath: string): Promise<BonsaiConfig | null> {
   const configPath = getConfigPath(repoPath);
@@ -76,18 +135,12 @@ export async function loadConfig(repoPath: string): Promise<BonsaiConfig | null>
   }
 
   const content = await file.text();
-  const parsed = parse(content) as unknown as Partial<BonsaiConfig> & {
-    repo?: { path?: string; worktree_base?: string; main_branch?: string };
-  };
-  const repo = parsed.repo;
-  return {
-    ...parsed,
-    repo: {
-      path: repo?.path ?? "",
-      worktree_base: repo?.worktree_base ?? "",
-      main_branch: repo?.main_branch ?? "main",
-    },
-  } as BonsaiConfig;
+  const parsed = parse(content) as unknown as Partial<BonsaiConfig> & Record<string, unknown>;
+  const { config, updated } = mergeConfigWithDefaults(parsed);
+  if (updated) {
+    await saveConfigToPath(configPath, config);
+  }
+  return config;
 }
 
 /**
@@ -97,12 +150,69 @@ export async function loadConfig(repoPath: string): Promise<BonsaiConfig | null>
 export async function saveConfig(config: BonsaiConfig): Promise<void> {
   const configDir = getBonsaiConfigDir();
   const configPath = getConfigPath(config.repo.path);
+  await saveConfigToPath(configPath, config);
+}
 
-  // Ensure config directory exists (native fs API, faster than shell)
+/**
+ * Save config to a specific path. Used when merging defaults into all configs.
+ */
+export async function saveConfigToPath(path: string, config: BonsaiConfig): Promise<void> {
+  const configDir = getBonsaiConfigDir();
   await mkdir(configDir, { recursive: true });
-
   const content = stringify(config);
-  await Bun.write(configPath, content);
+  await Bun.write(path, content);
+}
+
+/**
+ * Load raw config from a file path (for merging defaults into all configs).
+ */
+export async function loadConfigFromPath(
+  path: string
+): Promise<(Partial<BonsaiConfig> & Record<string, unknown>) | null> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) {
+    return null;
+  }
+  const content = await file.text();
+  const parsed = parse(content) as unknown as Partial<BonsaiConfig> & Record<string, unknown>;
+  return parsed;
+}
+
+/**
+ * List all bonsai config file paths (~/.config/bonsai/*.toml).
+ */
+export async function listAllConfigPaths(): Promise<string[]> {
+  const dir = getBonsaiConfigDir();
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isFile() && e.name.endsWith(".toml"))
+      .map((e) => join(dir, e.name));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Merge preset defaults into every existing config file. Non-destructive:
+ * only adds missing keys. Call after upgrade so new defaults are applied.
+ * Skips files that don't look like a valid bonsai config (missing repo.path).
+ * Ignores write errors (e.g. EPERM) so upgrade can still exit.
+ */
+export async function mergeDefaultsIntoAllConfigs(): Promise<void> {
+  const paths = await listAllConfigPaths();
+  for (const configPath of paths) {
+    try {
+      const parsed = await loadConfigFromPath(configPath);
+      if (!parsed?.repo?.path) continue;
+      const { config, updated } = mergeConfigWithDefaults(parsed);
+      if (updated && config.repo?.path) {
+        await saveConfigToPath(configPath, config);
+      }
+    } catch {
+      // Skip if we can't read or write (e.g. permissions); don't block upgrade
+    }
+  }
 }
 
 /**

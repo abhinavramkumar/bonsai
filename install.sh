@@ -98,15 +98,7 @@ install_binary() {
   fi
   
   echo "✓ Installed bonsai to ${INSTALL_DIR}/${BINARY_NAME}"
-  
-  # Verify installation
-  if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-    INSTALLED_VERSION=$("$BINARY_NAME" --version 2>/dev/null || echo "unknown")
-    echo "✓ bonsai is ready to use (version: $INSTALLED_VERSION)"
-  else
-    echo "Warning: bonsai was installed but is not in your PATH"
-    echo "Add $INSTALL_DIR to your PATH or run: export PATH=\"$INSTALL_DIR:\$PATH\""
-  fi
+  echo "✓ bonsai ${VERSION} is ready. Run ${BINARY_NAME} --version to confirm."
 }
 
 main() {
