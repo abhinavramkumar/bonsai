@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { saveConfig, configExists, getConfigPath, type BonsaiConfig } from "../lib/config.js";
-import { isGitRepo, getRepoRoot } from "../lib/git.js";
+import { isGitRepo, getRepoRoot, getDefaultMainBranchName, fetchRemote } from "../lib/git.js";
 import { isEditorAvailable, type EditorName } from "../lib/editor.js";
 
 /**
@@ -37,6 +37,16 @@ export async function initCommand(): Promise<void> {
     }
   }
 
+  // Detect default main branch for questionnaire (fetch first so remote refs exist)
+  let defaultMainBranch = "main";
+  try {
+    await fetchRemote();
+    const detected = await getDefaultMainBranchName();
+    if (detected) defaultMainBranch = detected;
+  } catch {
+    // use "main" as default
+  }
+
   // Collect configuration
   const config = await p.group(
     {
@@ -59,6 +69,14 @@ export async function initCommand(): Promise<void> {
             if (!value) return "Worktree base directory is required";
             return undefined;
           },
+        }),
+
+      mainBranch: () =>
+        p.text({
+          message:
+            "Main branch (all new worktrees will be created from the latest version of this branch)",
+          initialValue: defaultMainBranch,
+          defaultValue: "main",
         }),
 
       editor: () =>
@@ -107,6 +125,7 @@ export async function initCommand(): Promise<void> {
     repo: {
       path: config.repoPath as string,
       worktree_base: config.worktreeBase as string,
+      main_branch: (config.mainBranch as string) || "main",
     },
     editor: {
       name: config.editor as EditorName,
@@ -135,6 +154,7 @@ export async function initCommand(): Promise<void> {
     [
       `${pc.dim("Config file:")} ${configPath}`,
       `${pc.dim("Worktree base:")} ${config.worktreeBase}`,
+      `${pc.dim("Main branch:")} ${(config.mainBranch as string) || "main"} ${pc.dim("(new worktrees from latest of this branch)")}`,
       `${pc.dim("Editor:")} ${config.editor}`,
       setupCommands.length > 0
         ? `${pc.dim("Setup commands:")} ${setupCommands.length} command(s)`
@@ -145,7 +165,5 @@ export async function initCommand(): Promise<void> {
     "Configuration"
   );
 
-  p.outro(
-    `Done! Run ${pc.cyan("bonsai grow <branch-name>")} to create a worktree.`
-  );
+  p.outro(`Done! Run ${pc.cyan("bonsai grow <branch-name>")} to create a worktree.`);
 }

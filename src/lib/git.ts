@@ -21,12 +21,18 @@ export function validateBranchName(branch: string): BranchValidationResult {
   }
 
   if (branch.startsWith("-")) {
-    return { valid: false, error: "Branch name cannot start with '-' (would be interpreted as a git flag)" };
+    return {
+      valid: false,
+      error: "Branch name cannot start with '-' (would be interpreted as a git flag)",
+    };
   }
 
   // Allow alphanumeric, dots, underscores, slashes, and hyphens (standard git branch chars)
   if (!/^[A-Za-z0-9._\/-]+$/.test(branch)) {
-    return { valid: false, error: "Branch name contains invalid characters (allowed: letters, numbers, . _ / -)" };
+    return {
+      valid: false,
+      error: "Branch name contains invalid characters (allowed: letters, numbers, . _ / -)",
+    };
   }
 
   // Disallow consecutive dots (git restriction)
@@ -100,25 +106,56 @@ export class GitError extends Error {
 }
 
 /**
+ * Detect which default main branch exists on remote (for init questionnaire default).
+ * Tries origin/main, then origin/master.
+ * @returns Short branch name (e.g. "main" or "master") or null if neither exists
+ */
+export async function getDefaultMainBranchName(): Promise<string | null> {
+  for (const candidate of ["origin/main", "origin/master"]) {
+    const ok = await $`git rev-parse --verify ${candidate}`.quiet().nothrow();
+    if (ok.exitCode === 0) return candidate.replace("origin/", "");
+  }
+  return null;
+}
+
+export interface CreateWorktreeOptions {
+  /** When creating a new branch, use this ref as start point (e.g. origin/main). Required when branch does not exist. */
+  startPoint?: string;
+}
+
+/**
  * Create a worktree for a branch
  * - If branch exists (local or remote), attach to it
- * - If branch doesn't exist, create new branch from current HEAD
+ * - If branch doesn't exist, create new branch from options.startPoint (must be provided)
  * @throws {GitError} If worktree creation fails
  */
-export async function createWorktree(worktreePath: string, branch: string): Promise<void> {
+export async function createWorktree(
+  worktreePath: string,
+  branch: string,
+  options?: CreateWorktreeOptions
+): Promise<void> {
   const exists = await branchExists(branch);
   const isRemoteOnly = await isRemoteOnlyBranch(branch);
 
   let result;
   if (isRemoteOnly) {
     // Track remote branch
-    result = await $`git worktree add ${worktreePath} -b ${branch} origin/${branch}`.quiet().nothrow();
+    result = await $`git worktree add ${worktreePath} -b ${branch} origin/${branch}`
+      .quiet()
+      .nothrow();
   } else if (exists) {
     // Attach to existing local branch
     result = await $`git worktree add ${worktreePath} ${branch}`.quiet().nothrow();
   } else {
-    // Create new branch from HEAD
-    result = await $`git worktree add -b ${branch} ${worktreePath}`.quiet().nothrow();
+    const startPoint = options?.startPoint;
+    if (!startPoint) {
+      throw new GitError(
+        "Cannot create new branch: main branch start point not configured. Run bonsai init and set the main branch.",
+        -1,
+        ""
+      );
+    }
+    result = await $`git worktree add -b ${branch} ${worktreePath} ${startPoint}`.quiet().nothrow();
   }
 
   if (result.exitCode !== 0) {
