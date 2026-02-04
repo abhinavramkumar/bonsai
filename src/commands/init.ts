@@ -96,6 +96,13 @@ export async function initCommand(): Promise<void> {
           placeholder: "bun install, cp .env.example .env",
           defaultValue: "",
         }),
+
+      navigateAfterGrow: () =>
+        p.confirm({
+          message:
+            "After 'bonsai grow', cd into the new worktree in this terminal? (requires shell integration)",
+          initialValue: false,
+        }),
     },
     {
       onCancel: () => {
@@ -133,6 +140,9 @@ export async function initCommand(): Promise<void> {
     setup: {
       commands: setupCommands,
     },
+    behavior: {
+      navigate_after_grow: config.navigateAfterGrow === true,
+    },
   };
 
   // Save config
@@ -159,6 +169,7 @@ export async function initCommand(): Promise<void> {
       setupCommands.length > 0
         ? `${pc.dim("Setup commands:")} ${setupCommands.length} command(s)`
         : null,
+      `${pc.dim("Navigate after grow:")} ${config.navigateAfterGrow ? "yes" : "no"} ${pc.dim("(cd into new worktree when using shell integration)")}`,
     ]
       .filter(Boolean)
       .join("\n"),

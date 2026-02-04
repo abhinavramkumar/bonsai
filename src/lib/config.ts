@@ -23,6 +23,10 @@ export interface BonsaiConfig {
     /** Array of shell commands to run after creating worktree */
     commands: string[];
   };
+  /** When true, shell integration will cd to the new worktree after \`bonsai grow\` (terminal stays in current dir when false). */
+  behavior?: {
+    navigate_after_grow?: boolean;
+  };
 }
 
 /**
@@ -35,6 +39,7 @@ export const DEFAULT_CONFIG = {
   repo: { main_branch: "main" },
   editor: { name: "cursor" },
   setup: { commands: [] },
+  behavior: { navigate_after_grow: false },
 } as unknown as Partial<BonsaiConfig>;
 
 /**

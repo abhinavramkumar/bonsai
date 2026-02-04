@@ -131,9 +131,16 @@ commands = [
   "cp .env.example .env",
   "npm run db:migrate"
 ]
+
+# When true, your terminal will cd into the new worktree after \`bonsai grow\` (requires shell integration).
+# When false, you stay in your current directory; the editor still opens the new worktree.
+[behavior]
+navigate_after_grow = false
 ```
 
 Setup commands run sequentially in the new worktree (streamed output, fail-fast). Run `bonsai setup` to retry. See [Setup commands](#setup-commands) for more examples.
+
+**Terminal vs. editor:** By default, after `bonsai grow` your terminal stays in the current branch; only the editor opens the new worktree. Set `[behavior] navigate_after_grow = true` if you want the shell to cd into the new worktree automatically (requires [shell integration](#shell-integration)).
 
 ---
 
@@ -226,6 +233,7 @@ Running `bonsai completions` adds:
 - **Branch completion** for `grow` (local and remote)
 - **Worktree completion** for `prune` and `switch`
 - **`bonsai switch`** to cd into worktrees (requires shell integration; a subprocess can't change the parent shell's directory)
+- **Optional: cd after `grow`** — if `[behavior] navigate_after_grow = true`, the shell will cd into the new worktree after a successful `bonsai grow` so your terminal session follows the new branch
 
 ```bash
 bonsai grow feat<TAB>   # completes to feature/...

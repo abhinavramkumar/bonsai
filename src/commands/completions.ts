@@ -99,6 +99,18 @@ bonsai() {
             echo "No bonsai config found. Run 'bonsai init' first." >&2
             return 1
         fi
+    elif [[ "\$1" == "grow" || "\$1" == "add" || "\$1" == "new" ]] && [[ -n "\$2" ]]; then
+        local nav_file ret
+        nav_file=\$(mktemp)
+        BONSAI_NAVIGATE_FILE="\$nav_file" command bonsai "\$@"
+        ret=\$?
+        if [[ \$ret -eq 0 && -f "\$nav_file" && -s "\$nav_file" ]]; then
+            local target_dir
+            target_dir=\$(cat "\$nav_file")
+            cd "\$target_dir" && echo "🌳 \$target_dir"
+        fi
+        rm -f "\$nav_file"
+        return \$ret
     else
         command bonsai "\$@"
     fi
@@ -193,6 +205,18 @@ bonsai() {
             echo "No bonsai config found. Run 'bonsai init' first." >&2
             return 1
         fi
+    elif [[ "\$1" == "grow" || "\$1" == "add" || "\$1" == "new" ]] && [[ -n "\$2" ]]; then
+        local nav_file ret
+        nav_file=\$(mktemp)
+        BONSAI_NAVIGATE_FILE="\$nav_file" command bonsai "\$@"
+        ret=\$?
+        if [[ \$ret -eq 0 && -f "\$nav_file" && -s "\$nav_file" ]]; then
+            local target_dir
+            target_dir=\$(cat "\$nav_file")
+            cd "\$target_dir" && echo "🌳 \$target_dir"
+        fi
+        rm -f "\$nav_file"
+        return \$ret
     else
         command bonsai "\$@"
     fi

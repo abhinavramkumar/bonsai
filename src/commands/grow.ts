@@ -223,5 +223,11 @@ export async function growCommand(branchName: string): Promise<void> {
     }
   }
 
+  // When shell integration runs grow with BONSAI_NAVIGATE_FILE set, write path so shell can cd (if behavior.navigate_after_grow)
+  const navFile = process.env.BONSAI_NAVIGATE_FILE;
+  if (navFile && config.behavior?.navigate_after_grow) {
+    await Bun.write(navFile, worktreePath);
+  }
+
   p.outro(`Happy coding! Run ${pc.cyan(`bonsai prune ${branchName}`)} when done.`);
 }

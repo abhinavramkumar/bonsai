@@ -1,8 +1,9 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { stat } from "fs/promises";
+import { basename } from "path";
 import { findConfigForCwd } from "../lib/config.js";
 import { listWorktrees } from "../lib/git.js";
-import { basename } from "path";
 
 /**
  * List all worktrees for the current repository
@@ -13,9 +14,7 @@ export async function listCommand(): Promise<void> {
   // Load config
   const configResult = await findConfigForCwd();
   if (!configResult) {
-    p.cancel(
-      `No bonsai config found. Run ${pc.cyan("bonsai init")} first.`
-    );
+    p.cancel(`No bonsai config found. Run ${pc.cyan("bonsai init")} first.`);
     process.exit(1);
   }
 
@@ -25,9 +24,21 @@ export async function listCommand(): Promise<void> {
   const worktrees = await listWorktrees();
 
   // Filter to only show worktrees in the configured base directory
-  const bonsaiWorktrees = worktrees.filter((wt) =>
-    wt.startsWith(config.repo.worktree_base)
-  );
+  const filtered = worktrees.filter((wt) => wt.startsWith(config.repo.worktree_base));
+
+  // Sort by last activity (directory mtime, most recent first)
+  const bonsaiWorktrees = await Promise.all(
+    filtered.map(async (path) => {
+      let mtimeMs = 0;
+      try {
+        const s = await stat(path);
+        mtimeMs = s.mtimeMs;
+      } catch {
+        // Stale or missing path; keep at end
+      }
+      return { path, mtimeMs };
+    })
+  ).then((entries) => entries.sort((a, b) => b.mtimeMs - a.mtimeMs).map((e) => e.path));
 
   // Also show the main repo
   const mainRepo = worktrees.find((wt) => wt === config.repo.path);
