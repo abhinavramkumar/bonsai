@@ -87,7 +87,7 @@ bonsai() {
             target_dir="\${worktree_base}/\$2"
             if [[ -d "\$target_dir" ]]; then
                 cd "\$target_dir" || return 1
-                echo "📂 \$target_dir"
+                echo "🌳 \$target_dir"
                 return 0
             else
                 echo "Worktree not found: \$target_dir" >&2
@@ -181,7 +181,7 @@ bonsai() {
             target_dir="\${worktree_base}/\$2"
             if [[ -d "\$target_dir" ]]; then
                 cd "\$target_dir" || return 1
-                echo "📂 \$target_dir"
+                echo "🌳 \$target_dir"
                 return 0
             else
                 echo "Worktree not found: \$target_dir" >&2
@@ -268,14 +268,13 @@ export async function completionsCommand(shell?: string): Promise<void> {
       return;
     }
 
-    const configFile = selectedShell === "zsh" 
-      ? join(homedir(), ".zshrc")
-      : join(homedir(), ".bashrc");
+    const configFile =
+      selectedShell === "zsh" ? join(homedir(), ".zshrc") : join(homedir(), ".bashrc");
 
     // Check for existing integration
     if (await hasExistingIntegration(configFile)) {
       p.log.warn(`Bonsai integration already exists in ${pc.dim(configFile)}`);
-      
+
       const reinstall = await p.confirm({
         message: "Remove and reinstall?",
         initialValue: false,
@@ -289,7 +288,10 @@ export async function completionsCommand(shell?: string): Promise<void> {
       // Remove existing integration
       const file = Bun.file(configFile);
       const content = await file.text();
-      const cleaned = content.replace(/\n# ===== bonsai shell integration =====[\s\S]*?# ===== end bonsai =====\n?/g, "");
+      const cleaned = content.replace(
+        /\n# ===== bonsai shell integration =====[\s\S]*?# ===== end bonsai =====\n?/g,
+        ""
+      );
       await Bun.write(configFile, cleaned);
       p.log.info("Removed existing integration");
     }
@@ -311,11 +313,7 @@ export async function completionsCommand(shell?: string): Promise<void> {
 
     p.log.success(`Added to ${pc.dim(configFile)}`);
 
-    p.note(
-      `source ${configFile}\n\n` +
-      `${pc.dim("Or restart your terminal")}`,
-      "To activate now"
-    );
+    p.note(`source ${configFile}\n\n` + `${pc.dim("Or restart your terminal")}`, "To activate now");
 
     p.outro("Done! Tab completion and 'bonsai switch' are ready.");
     return;
