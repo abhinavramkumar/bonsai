@@ -1,212 +1,80 @@
-# Bonsai Roadmap
+# Roadmap
 
-Prioritized list of features based on user value, implementation complexity, and workflow impact.
+What we're working toward—and what's on the back burner.
 
-## Phase 1: Core Enhancements (High Priority)
+---
 
-### 1. `bonsai sync` - Update worktrees from remote
-**Priority:** 🔴 Critical  
-**Complexity:** Low  
-**Impact:** High
+## Up next
 
-Update worktrees with latest changes from remote. Essential for keeping multiple worktrees in sync.
+**`bonsai sync`** — Pull latest in one or all worktrees. Right now you have to `git pull` in each worktree yourself; this would wrap that.
 
 ```bash
-bonsai sync <branch>        # Sync specific worktree
-bonsai sync --all           # Sync all worktrees
+bonsai sync <branch>     # one worktree
+bonsai sync --all       # all of them
 ```
 
-**Why first:** Users constantly need to pull latest changes. Currently requires manual `git pull` in each worktree.
-
----
-
-### 2. `bonsai status` - Detailed worktree information
-**Priority:** 🔴 Critical  
-**Complexity:** Low  
-**Impact:** High
-
-Show comprehensive status of a worktree: branch, commit, uncommitted changes, upstream status, last activity.
+**`bonsai status`** — Show what’s going on in a worktree: branch, commit, dirty files, upstream. No more guessing.
 
 ```bash
-bonsai status <branch>      # Status of specific worktree
-bonsai status               # Status of current worktree
+bonsai status            # current worktree
+bonsai status feature/foo
 ```
 
-**Why second:** Users need visibility into worktree state. Helps debug issues and understand what's happening.
-
----
-
-### 3. Enhanced `bonsai list` output
-**Priority:** 🟡 High  
-**Complexity:** Low  
-**Impact:** Medium
-
-Add verbose mode and filtering options to list command.
+**Better `bonsai list`** — Verbose mode (commit, last modified, dirty), and filter by pattern or only dirty worktrees.
 
 ```bash
-bonsai list --verbose       # Show commit hash, last modified, dirty status
-bonsai list --dirty         # Show only worktrees with uncommitted changes
-bonsai list --filter <pattern>
+bonsai list --verbose
+bonsai list --dirty
+bonsai list --filter "feature/*"
 ```
 
-**Why third:** Improves existing functionality with minimal effort. High user value.
+**`bonsai prune --all`** — Prune multiple worktrees at once, with confirmation. Plus `--stale` for deleted branches, `--dry-run` to preview.
 
 ---
 
-### 4. `bonsai prune --all` - Bulk cleanup
-**Priority:** 🟡 High  
-**Complexity:** Low  
-**Impact:** Medium
+## Then
 
-Remove multiple worktrees at once with safety checks.
+**`bonsai grow` tweaks** — More control: `--no-editor`, `--no-setup`, `--from <ref>`, and an interactive branch picker. Also: grow from a PR in one shot (e.g. `bonsai grow pr/123`) for review workflows.
 
-```bash
-bonsai prune --all          # Prune all worktrees (with confirmation)
-bonsai prune --stale       # Remove worktrees for deleted branches
-bonsai prune --dry-run     # Preview what would be pruned
-```
+**`bonsai run <branch> -- <cmd>`** — Run a command in that worktree without leaving your shell. Handy for scripts and CI (e.g. “test every worktree”).
 
-**Why fourth:** Common workflow need. Users often want to clean up multiple worktrees.
+**`bonsai branch`** — List branches and show which ones have worktrees. Clears up the branch ↔ folder mapping.
 
----
+**Config UX** — `bonsai config --show` and `--reset` so you can inspect or reset without opening the file.
 
-## Phase 2: Workflow Improvements (Medium Priority)
+**Repo-level config** — Optional `.bonsai.toml` (or similar) in the repo root that merges with your global config. Teams can commit shared setup and main_branch so everyone gets the same behavior.
 
-### 5. `bonsai grow` enhancements
-**Priority:** 🟡 High  
-**Complexity:** Low-Medium  
-**Impact:** Medium
-
-Add flags to control grow behavior.
-
-```bash
-bonsai grow <branch> --no-editor    # Skip opening editor
-bonsai grow <branch> --no-setup     # Skip setup commands
-bonsai grow <branch> --from <ref>   # Create from specific branch/commit
-bonsai grow --interactive           # Interactive branch picker (fzf-style)
-```
-
-**Why fifth:** Gives users more control over worktree creation. Interactive picker is high-value UX improvement.
+**Hooks** — Optional `post_grow` / `pre_prune` (and friends) in config so you can run your own scripts at key moments.
 
 ---
 
-### 6. `bonsai branch` - Branch management integration
-**Priority:** 🟢 Medium  
-**Complexity:** Medium  
-**Impact:** Medium
+## Later
 
-List branches with worktree status indicators.
+**`bonsai clean`** — Fix stale worktree refs and remove worktrees for deleted branches.
 
-```bash
-bonsai branch               # List all branches, show which have worktrees
-bonsai branch --worktrees   # Show only branches with active worktrees
-```
+**`bonsai doctor`** — Basic diagnostics: common problems and suggested fixes.
 
-**Why sixth:** Helps users understand branch-to-worktree mapping. Useful for discovery.
+**Merged-branch hint** — In `list` / `status`, optionally say “this branch is merged into main, maybe prune it.” Opt-in so it doesn’t get in the way.
+
+**Multi-repo** — Switch context across repos, list worktrees for all of them. Heavier lift; most people stick to one repo for now.
 
 ---
 
-### 7. Configuration improvements
-**Priority:** 🟢 Medium  
-**Complexity:** Low  
-**Impact:** Low-Medium
+## README and docs
 
-Better config management and visibility.
-
-```bash
-bonsai config --show        # Display config without opening editor
-bonsai config --reset       # Reset to defaults
-```
-
-**Why seventh:** Low effort, improves UX for config management.
+We want the first screen to sell the tool: one clear line, a short terminal demo (GIF or screencast), and badges (CI, version, license). Quick start before long reference; “How grow/prune works” and edge cases can live in a Reference section or separate doc. Add a line on who it’s for and when you might *not* use bonsai (e.g. raw worktrees). Details in `docs/README-DESIGN.md`.
 
 ---
 
-## Phase 3: Advanced Features (Lower Priority)
+## Backlog / maybe
 
-### 8. `bonsai clean` - Maintenance utilities
-**Priority:** 🟢 Medium  
-**Complexity:** Medium  
-**Impact:** Low-Medium
-
-Clean up stale references and orphaned worktrees.
-
-```bash
-bonsai clean                # Clean stale worktree references
-bonsai clean --orphaned    # Remove worktrees for deleted branches
-```
-
-**Why eighth:** Maintenance feature. Useful but not daily workflow.
-
----
-
-### 9. `bonsai doctor` - Diagnostics
-**Priority:** 🟢 Medium  
-**Complexity:** Medium  
-**Impact:** Low-Medium
-
-Diagnose common issues and suggest fixes.
-
-```bash
-bonsai doctor               # Check for common issues
-```
-
-**Why ninth:** Helpful for troubleshooting but not core functionality.
-
----
-
-### 10. Multi-repo support
-**Priority:** 🔵 Low  
-**Complexity:** High  
-**Impact:** Medium
-
-Manage worktrees across multiple repositories.
-
-```bash
-bonsai repo <name>          # Switch between repos
-bonsai list --all-repos     # List worktrees across all repos
-```
-
-**Why tenth:** Complex feature. Most users work with single repo. Lower priority.
-
----
-
-## Implementation Notes
-
-### Quick Wins (Low complexity, high value)
-- `bonsai sync` - Simple git pull wrapper
-- `bonsai status` - Git status aggregation
-- Enhanced `bonsai list` - Formatting improvements
-- `bonsai prune --all` - Loop over existing prune logic
-
-### Medium Effort (Medium complexity, high value)
-- `bonsai grow --interactive` - Requires fzf integration or custom picker
-- `bonsai branch` - Needs branch listing + worktree correlation
-- `bonsai grow --from <ref>` - Additional git worktree options
-
-### Future Considerations
-- Self-update mechanism (`bonsai update`)
-- Export/import worktree configurations
-- Template system for common workflows
-- IDE workspace file generation
-
----
-
-## Success Metrics
-
-Track adoption of new features:
-- Usage frequency of new commands
-- User feedback/requests
-- GitHub issues/feature requests
-- Community contributions
+- Presets (e.g. `bonsai grow --preset review <branch>` with different setup)
+- Export/import config so you can share setups across machines
+- Generate a VS Code/Cursor workspace file that points at all worktrees
+- Windows (paths and git differ; we’d consider it if people ask)
 
 ---
 
 ## Contributing
 
-When implementing features:
-1. Follow existing code patterns
-2. Add comprehensive error handling
-3. Include helpful error messages
-4. Update README with examples
-5. Consider edge cases (stale refs, missing dirs, etc.)
+When you work on a feature: follow existing patterns, handle errors and edge cases (stale refs, missing dirs), and update the README where it matters.
