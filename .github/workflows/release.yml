@@ -123,28 +123,11 @@ jobs:
 
       - name: Generate release notes
         id: release-notes
-        run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_BODY="${{ github.event.pull_request.body }}"
-          BUMP_TYPE="${{ steps.version-bump.outputs.bump-type }}"
-
-          NOTES="## Release ${{ env.TAG }}"
-          NOTES="$NOTES\n\n**Version bump:** $BUMP_TYPE"
-          NOTES="$NOTES\n\n### Changes"
-          NOTES="$NOTES\n\n**$PR_TITLE**"
-
-          if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
-            NOTES="$NOTES\n\n$PR_BODY"
-          fi
-
-          NOTES="$NOTES\n\n### Binaries"
-          NOTES="$NOTES\n- macOS Intel (darwin-x86_64)"
-          NOTES="$NOTES\n- macOS Apple Silicon (darwin-arm64)"
-          NOTES="$NOTES\n- Linux x64 (linux-x86_64)"
-          NOTES="$NOTES\n- Linux ARM64 (linux-arm64)"
-
-          printf '%b' "$NOTES" > /tmp/release-notes.md
-          echo "Release notes generated"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BUMP_TYPE: ${{ steps.version-bump.outputs.bump-type }}
+        run: bun run scripts/generate-release-notes.ts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
