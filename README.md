@@ -121,6 +121,7 @@ Config lives at `~/.config/bonsai/<repo-name>.toml` (XDG compliant). Edit with `
 [repo]
 path = "/Users/you/Projects/myapp"
 worktree_base = "/Users/you/Projects/myapp.worktrees"
+main_branch = "main"  # new worktrees are created from latest of this branch
 
 [editor]
 name = "cursor"  # cursor | vscode | claude | goland | rust-rover | webstorm | pycharm
