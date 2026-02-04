@@ -1,6 +1,6 @@
 {
   "name": "bonsai",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Git worktree workflow CLI - carefully cultivate your branches",
   "type": "module",
   "bin": {
