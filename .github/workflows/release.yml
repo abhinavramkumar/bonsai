@@ -6,10 +6,21 @@ on:
       - closed
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump (when running manually)"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,17 +50,18 @@ jobs:
       - name: Determine version bump type
         id: version-bump
         run: |
-          LABELS="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
-          echo "PR labels: $LABELS"
-
-          if echo "$LABELS" | grep -qi "major"; then
-            BUMP_TYPE="major"
-          elif echo "$LABELS" | grep -qi "minor"; then
-            BUMP_TYPE="minor"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP_TYPE="${{ github.event.inputs.bump_type }}"
           else
-            BUMP_TYPE="patch"
+            LABELS="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+            if echo "$LABELS" | grep -qi "major"; then
+              BUMP_TYPE="major"
+            elif echo "$LABELS" | grep -qi "minor"; then
+              BUMP_TYPE="minor"
+            else
+              BUMP_TYPE="patch"
+            fi
           fi
-
           echo "bump-type=$BUMP_TYPE" >> $GITHUB_OUTPUT
           echo "Using $BUMP_TYPE version bump"
 
@@ -124,7 +136,7 @@ jobs:
       - name: Generate release notes
         id: release-notes
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_TITLE: ${{ github.event_name == 'workflow_dispatch' && 'Manual release' || github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           BUMP_TYPE: ${{ steps.version-bump.outputs.bump-type }}
         run: bun run scripts/generate-release-notes.ts
