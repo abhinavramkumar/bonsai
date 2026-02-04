@@ -37,9 +37,7 @@ export async function growCommand(branchName: string): Promise<void> {
   // Load config
   const configResult = await findConfigForCwd();
   if (!configResult) {
-    p.cancel(
-      `No bonsai config found. Run ${pc.cyan("bonsai init")} first.`
-    );
+    p.cancel(`No bonsai config found. Run ${pc.cyan("bonsai init")} first.`);
     process.exit(1);
   }
 
@@ -76,6 +74,8 @@ export async function growCommand(branchName: string): Promise<void> {
   const exists = await branchExists(branchName);
   const isRemote = await isRemoteOnlyBranch(branchName);
 
+  const mainBranch = config.repo.main_branch ?? "main";
+
   if (exists) {
     if (isRemote) {
       p.log.info(`Tracking remote branch: ${pc.cyan(`origin/${branchName}`)}`);
@@ -83,7 +83,7 @@ export async function growCommand(branchName: string): Promise<void> {
       p.log.info(`Using existing local branch: ${pc.cyan(branchName)}`);
     }
   } else {
-    p.log.info(`Creating new branch: ${pc.cyan(branchName)}`);
+    p.log.info(`Creating new branch ${pc.cyan(branchName)} from latest ${pc.cyan(mainBranch)}`);
   }
 
   // Check if branch is already checked out in another worktree
@@ -93,15 +93,15 @@ export async function growCommand(branchName: string): Promise<void> {
       // Worktree exists - user needs to handle it
       p.cancel(
         `Branch ${pc.cyan(branchName)} is already checked out at:\n` +
-        `  ${pc.dim(existingWorktree.path)}\n\n` +
-        `Either use that worktree or check out a different branch there first.`
+          `  ${pc.dim(existingWorktree.path)}\n\n` +
+          `Either use that worktree or check out a different branch there first.`
       );
       process.exit(1);
     } else {
       // Stale worktree reference - offer to prune
       p.log.warn(
         `Branch ${pc.cyan(branchName)} has a stale worktree reference at:\n` +
-        `  ${pc.dim(existingWorktree.path)} ${pc.red("(directory no longer exists)")}`
+          `  ${pc.dim(existingWorktree.path)} ${pc.red("(directory no longer exists)")}`
       );
 
       const shouldPrune = await p.confirm({
@@ -131,8 +131,10 @@ export async function growCommand(branchName: string): Promise<void> {
   const createSpinner = p.spinner();
   createSpinner.start("Creating worktree");
 
+  const startPoint = `origin/${mainBranch}`;
+
   try {
-    await createWorktree(worktreePath, branchName);
+    await createWorktree(worktreePath, branchName, { startPoint });
     createSpinner.stop("Worktree created");
   } catch (error) {
     createSpinner.stop("Failed to create worktree");
@@ -173,13 +175,18 @@ export async function growCommand(branchName: string): Promise<void> {
 
   if (setupCommands.length > 0) {
     console.log();
-    console.log(pc.bgYellow(pc.black(" SETUP RUNNING ")) + pc.yellow(` ${setupCommands.length} command(s) - please wait...`));
+    console.log(
+      pc.bgYellow(pc.black(" SETUP RUNNING ")) +
+        pc.yellow(` ${setupCommands.length} command(s) - please wait...`)
+    );
     console.log(pc.dim(`Working directory: ${worktreePath}`));
     console.log();
 
     for (let i = 0; i < setupCommands.length; i++) {
       const cmd = setupCommands[i]!;
-      console.log(pc.cyan(`━━━ [${i + 1}/${setupCommands.length}] `) + pc.bold(cmd) + pc.cyan(` ━━━`));
+      console.log(
+        pc.cyan(`━━━ [${i + 1}/${setupCommands.length}] `) + pc.bold(cmd) + pc.cyan(` ━━━`)
+      );
       console.log();
 
       const result = await runCommandWithLogs(cmd, worktreePath);
@@ -194,7 +201,9 @@ export async function growCommand(branchName: string): Promise<void> {
         // Stop on first failure
         if (i < setupCommands.length - 1) {
           console.log();
-          console.log(pc.yellow(`Stopping setup. ${setupCommands.length - i - 1} command(s) remaining.`));
+          console.log(
+            pc.yellow(`Stopping setup. ${setupCommands.length - i - 1} command(s) remaining.`)
+          );
           console.log(pc.dim(`Run ${pc.cyan(`bonsai setup`)} from the worktree to retry.`));
         }
         break;
@@ -205,7 +214,10 @@ export async function growCommand(branchName: string): Promise<void> {
     // Final setup status
     console.log();
     if (setupFailed) {
-      console.log(pc.bgRed(pc.white(" SETUP FAILED ")) + ` Run ${pc.cyan("bonsai setup")} in the worktree to retry.`);
+      console.log(
+        pc.bgRed(pc.white(" SETUP FAILED ")) +
+          ` Run ${pc.cyan("bonsai setup")} in the worktree to retry.`
+      );
     } else {
       console.log(pc.bgGreen(pc.black(" SETUP COMPLETE ")) + " Your worktree is ready!");
     }

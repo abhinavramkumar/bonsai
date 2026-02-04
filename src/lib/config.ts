@@ -11,6 +11,8 @@ export interface BonsaiConfig {
   repo: {
     path: string;
     worktree_base: string;
+    /** Main branch name; new worktrees are created from latest of this branch. Defaults to "main" if missing in config. */
+    main_branch: string;
   };
   editor: {
     name: "cursor" | "vscode" | "claude";
@@ -73,7 +75,18 @@ export async function loadConfig(repoPath: string): Promise<BonsaiConfig | null>
   }
 
   const content = await file.text();
-  return parse(content) as unknown as BonsaiConfig;
+  const parsed = parse(content) as unknown as Partial<BonsaiConfig> & {
+    repo?: { path?: string; worktree_base?: string; main_branch?: string };
+  };
+  const repo = parsed.repo;
+  return {
+    ...parsed,
+    repo: {
+      path: repo?.path ?? "",
+      worktree_base: repo?.worktree_base ?? "",
+      main_branch: repo?.main_branch ?? "main",
+    },
+  } as BonsaiConfig;
 }
 
 /**
@@ -122,7 +135,10 @@ async function getMainRepoPath(): Promise<string | null> {
  * Find config for current working directory
  * Works from both main repo and worktrees by using --git-common-dir
  */
-export async function findConfigForCwd(): Promise<{ config: BonsaiConfig; repoPath: string } | null> {
+export async function findConfigForCwd(): Promise<{
+  config: BonsaiConfig;
+  repoPath: string;
+} | null> {
   const repoPath = await getMainRepoPath();
 
   if (!repoPath) {
