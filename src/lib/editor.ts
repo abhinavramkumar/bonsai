@@ -3,7 +3,14 @@ import { spawn, which } from "bun";
 /**
  * Supported editors
  */
-export type EditorName = "cursor" | "vscode" | "claude";
+export type EditorName =
+  "cursor" |
+  "vscode" |
+  "claude" |
+  "goland" |
+  "pycharm" |
+  "webstorm" |
+  "rustrover";
 
 /**
  * Editor CLI commands
@@ -13,6 +20,10 @@ const EDITOR_COMMANDS: Record<EditorName, string> = {
   cursor: "cursor",
   vscode: "code",
   claude: "claude",
+  goland: "goland",
+  pycharm: "pycharm",
+  webstorm: "webstorm",
+  rustrover: "rustrover",
 } as const;
 
 /**
@@ -46,6 +57,10 @@ export function getEditorDisplayName(editor: EditorName): string {
     cursor: "Cursor",
     vscode: "VS Code",
     claude: "Claude Code",
+    goland: "GoLand",
+    pycharm: "PyCharm",
+    webstorm: "WebStorm",
+    rustrover: "RustRover",
   };
   return names[editor];
 }

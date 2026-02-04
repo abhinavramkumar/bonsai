@@ -3,6 +3,7 @@ import { join, basename, dirname } from "path";
 import { mkdir } from "fs/promises";
 import { parse, stringify } from "smol-toml";
 import { $ } from "bun";
+import type { EditorName } from "./editor.ts";
 
 /**
  * Bonsai configuration structure
@@ -15,7 +16,7 @@ export interface BonsaiConfig {
     main_branch: string;
   };
   editor: {
-    name: "cursor" | "vscode" | "claude";
+    name: EditorName;
   };
   setup: {
     /** Array of shell commands to run after creating worktree */

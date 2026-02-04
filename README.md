@@ -206,6 +206,10 @@ Branch names are sanitized for folder names (slashes become dashes):
 | Cursor | `cursor` | `cursor` |
 | VS Code | `code` | `vscode` |
 | Claude Code | `claude` | `claude` |
+| GoLand | `goland` | `goland` |
+| RustRover | `rust-rover` | `rust-rover` |
+| Webstorm | `webstorm` | `webstorm` |
+| PyCharm | `pycharm` | `pycharm` |
 
 The editor opens immediately after worktree creation (doesn't wait for setup to complete).
 
