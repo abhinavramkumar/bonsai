@@ -143,7 +143,7 @@ jobs:
           NOTES="$NOTES\n- Linux x64 (linux-x86_64)"
           NOTES="$NOTES\n- Linux ARM64 (linux-arm64)"
 
-          echo "$NOTES" > /tmp/release-notes.md
+          printf '%b' "$NOTES" > /tmp/release-notes.md
           echo "Release notes generated"
 
       - name: Create GitHub Release
