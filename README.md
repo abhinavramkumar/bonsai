@@ -94,7 +94,7 @@ bonsai init
 bonsai grow feature/auth
 ```
 
-That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`), runs your setup commands, and opens your editor. Use `bonsai list`, `bonsai switch <name>` to jump between worktrees, and `bonsai prune <branch>` when done.
+That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`), runs your setup commands, and opens your editor. Use `bonsai list`, `bonsai switch <name>` to jump between worktrees, `bonsai open` (or `bonsai bloom`) to open the current worktree in your configured editor, and `bonsai prune <branch>` when done.
 
 [Full command reference](#commands) below.
 
@@ -107,6 +107,7 @@ That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`
 | `bonsai prune <branch>` | `rm`, `remove` | Remove worktree (prompts if uncommitted changes) |
 | `bonsai list`           | `ls`           | List all worktrees                               |
 | `bonsai switch <name>`  |                | cd to worktree _(requires shell completions)_    |
+| `bonsai open`           | `bloom`        | Open current worktree in configured editor       |
 | `bonsai setup`          |                | Re-run setup commands in current worktree        |
 | `bonsai config`         |                | Open config in `$EDITOR`                         |
 | `bonsai completions`    |                | Install shell integration                        |
@@ -248,6 +249,7 @@ bonsai prune hotfix/security-fix
 
 # Back to feature (with shell completions)
 bonsai switch feature-payments
+bonsai open     # or bonsai bloom — open current worktree in configured editor
 ```
 
 ### Edge cases
@@ -317,6 +319,7 @@ src/
     grow.ts           # Create worktree + setup + editor
     prune.ts          # Remove worktree with safety checks
     list.ts           # List worktrees
+    open.ts           # Open current worktree in configured editor
     setup.ts          # Re-run setup commands
     config.ts         # Open config in $EDITOR
     completions.ts    # Shell integration (zsh/bash)

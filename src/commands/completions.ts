@@ -22,7 +22,7 @@ _bonsai_repo_slug() {
 }
 
 _bonsai_complete() {
-    local commands="init grow add new prune rm remove list ls setup config switch completions"
+    local commands="init grow add new prune rm remove list ls open bloom setup config switch completions"
     
     if [[ \${#words[@]} -eq 2 ]]; then
         _describe 'commands' "(
@@ -36,6 +36,8 @@ _bonsai_complete() {
             list:'List all worktrees'
             ls:'List all worktrees (alias)'
             switch:'Switch to a worktree'
+            open:'Open current worktree in configured editor'
+            bloom:'Open current worktree in configured editor (alias for open)'
             setup:'Run setup commands'
             config:'Open config in editor'
             completions:'Shell completions'
@@ -127,7 +129,7 @@ _bonsai_complete() {
     COMPREPLY=()
     cur="\${COMP_WORDS[COMP_CWORD]}"
     prev="\${COMP_WORDS[COMP_CWORD-1]}"
-    commands="init grow add new prune rm remove list ls setup config switch completions"
+    commands="init grow add new prune rm remove list ls open bloom setup config switch completions"
 
     case "\${prev}" in
         grow|add|new)

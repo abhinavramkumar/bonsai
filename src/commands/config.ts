@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { which } from "bun";
 import { findConfigForCwd, getConfigPath } from "../lib/config.js";
+import { EDITOR_COMMANDS } from "../lib/editor.js";
 
 /**
  * Get the user's preferred editor
@@ -34,16 +35,16 @@ export async function configCommand(): Promise<void> {
   // Find config (works from both main repo and worktrees)
   const configResult = await findConfigForCwd();
   if (!configResult) {
-    p.cancel(
-      `No bonsai config found.\nRun ${pc.cyan("bonsai init")} first.`
-    );
+    p.cancel(`No bonsai config found.\nRun ${pc.cyan("bonsai init")} first.`);
     process.exit(1);
   }
 
   const configPath = getConfigPath(configResult.repoPath);
 
-  // Get editor
-  const editor = await getEditor();
+  // Prefer bonsai config editor over $EDITOR / $VISUAL
+  const editor: string = configResult.config.editor
+    ? EDITOR_COMMANDS[configResult.config.editor.name]
+    : getEditor();
 
   p.log.info(`Opening config in ${pc.cyan(editor)}`);
   p.log.info(pc.dim(configPath));

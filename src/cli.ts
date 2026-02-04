@@ -46,6 +46,7 @@ ${pc.bold("Commands:")}
   ${pc.cyan("prune")} <branch>    Remove a worktree ${pc.dim("(alias: rm, remove)")}
   ${pc.cyan("list")}              List all worktrees ${pc.dim("(alias: ls)")}
   ${pc.cyan("switch")} <name>     Switch to a worktree ${pc.dim("(requires shell completions)")}
+  ${pc.cyan("open")}              Open current worktree in configured editor ${pc.dim("(alias: bloom)")}
   ${pc.cyan("setup")}             Run setup commands in current worktree
   ${pc.cyan("config")}            Open config file in $EDITOR
   ${pc.cyan("completions")}       Generate shell completions
@@ -67,6 +68,9 @@ ${pc.bold("Examples:")}
 
   ${pc.dim("# Remove a worktree (checks for uncommitted changes)")}
   $ bonsai prune feature/user-auth
+
+  ${pc.dim("# Open current worktree in configured editor")}
+  $ bonsai switch feature-auth && bonsai open
 
   ${pc.dim("# Re-run setup commands (e.g., after a failure)")}
   $ bonsai switch feature-auth && bonsai setup
@@ -133,6 +137,13 @@ async function main(): Promise<void> {
       }
       const { pruneCommand } = await import("./commands/prune.js");
       await pruneCommand(branchName);
+      break;
+    }
+
+    case "open":
+    case "bloom": {
+      const { openCommand } = await import("./commands/open.js");
+      await openCommand();
       break;
     }
 

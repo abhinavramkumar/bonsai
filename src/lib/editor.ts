@@ -4,19 +4,19 @@ import { spawn, which } from "bun";
  * Supported editors
  */
 export type EditorName =
-  "cursor" |
-  "vscode" |
-  "claude" |
-  "goland" |
-  "pycharm" |
-  "webstorm" |
-  "rustrover";
+  | "cursor"
+  | "vscode"
+  | "claude"
+  | "goland"
+  | "pycharm"
+  | "webstorm"
+  | "rustrover";
 
 /**
  * Editor CLI commands
  * These are the standard CLI commands for each editor on macOS/Linux
  */
-const EDITOR_COMMANDS: Record<EditorName, string> = {
+export const EDITOR_COMMANDS: Record<EditorName, string> = {
   cursor: "cursor",
   vscode: "code",
   claude: "claude",
