@@ -67,5 +67,5 @@ export async function listCommand(): Promise<void> {
     console.log(pc.dim(`Main repo: ${mainRepo}`));
   }
 
-  p.outro(`Run ${pc.cyan("bonsai prune <branch>")} to remove a worktree.`);
+  p.outro(`Run ${pc.cyan("bonsai prune")} to remove worktrees.`);
 }
