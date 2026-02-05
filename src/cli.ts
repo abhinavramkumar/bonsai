@@ -43,7 +43,7 @@ ${pc.bold("Usage:")}
 ${pc.bold("Commands:")}
   ${pc.cyan("init")}              Initialize bonsai for current repository
   ${pc.cyan("grow")} <branch>     Create a worktree for a branch ${pc.dim("(alias: add, new)")}
-  ${pc.cyan("prune")} <branch>    Remove a worktree ${pc.dim("(alias: rm, remove)")}
+  ${pc.cyan("prune")} [branch]    Remove a worktree ${pc.dim("(alias: rm, remove)")}
   ${pc.cyan("list")}              List all worktrees ${pc.dim("(alias: ls)")}
   ${pc.cyan("switch")} <name>     Switch to a worktree ${pc.dim("(requires shell completions)")}
   ${pc.cyan("open")}              Open current worktree in configured editor ${pc.dim("(alias: bloom)")}
@@ -68,6 +68,9 @@ ${pc.bold("Examples:")}
 
   ${pc.dim("# Remove a worktree (checks for uncommitted changes)")}
   $ bonsai prune feature/user-auth
+
+  ${pc.dim("# Remove multiple worktrees (interactive selection)")}
+  $ bonsai prune
 
   ${pc.dim("# Open current worktree in configured editor")}
   $ bonsai switch feature-auth && bonsai open
@@ -130,11 +133,7 @@ async function main(): Promise<void> {
     case "prune":
     case "rm":
     case "remove": {
-      const branchName = args[1];
-      if (!branchName) {
-        p.cancel("Missing branch name. Usage: bonsai prune <branch-name>");
-        process.exit(1);
-      }
+      const branchName = args[1]; // Optional now
       const { pruneCommand } = await import("./commands/prune.js");
       await pruneCommand(branchName);
       break;

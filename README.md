@@ -47,6 +47,9 @@ bonsai grow hotfix/urgent
 # Fix bug in a completely isolated environment
 # Your feature branch is untouched, editor still open
 bonsai prune hotfix/urgent
+
+# Or clean up multiple worktrees at once:
+bonsai prune  # Interactive multi-select
 ```
 
 Each worktree is a fully independent working directory. No stashing. No conflicts.
@@ -94,24 +97,24 @@ bonsai init
 bonsai grow feature/auth
 ```
 
-That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`), runs your setup commands, and opens your editor. Use `bonsai list`, `bonsai switch <name>` to jump between worktrees, `bonsai open` (or `bonsai bloom`) to open the current worktree in your configured editor, and `bonsai prune <branch>` when done.
+That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`), runs your setup commands, and opens your editor. Use `bonsai list`, `bonsai switch <name>` to jump between worktrees, `bonsai open` (or `bonsai bloom`) to open the current worktree in your configured editor, and `bonsai prune` when done.
 
 [Full command reference](#commands) below.
 
 ## Commands
 
-| Command                 | Aliases        | Description                                      |
-| ----------------------- | -------------- | ------------------------------------------------ |
-| `bonsai init`           |                | Interactive setup wizard for current repo        |
-| `bonsai grow <branch>`  | `add`, `new`   | Create worktree, run setup, open editor          |
-| `bonsai prune <branch>` | `rm`, `remove` | Remove worktree (prompts if uncommitted changes) |
-| `bonsai list`           | `ls`           | List all worktrees                               |
-| `bonsai switch <name>`  |                | cd to worktree _(requires shell completions)_    |
-| `bonsai open`           | `bloom`        | Open current worktree in configured editor       |
-| `bonsai setup`          |                | Re-run setup commands in current worktree        |
-| `bonsai config`         |                | Open config in `$EDITOR`                         |
-| `bonsai completions`    |                | Install shell integration                        |
-| `bonsai upgrade`        |                | Install or upgrade to latest release             |
+| Command                 | Aliases        | Description                                                    |
+| ----------------------- | -------------- | -------------------------------------------------------------- |
+| `bonsai init`           |                | Interactive setup wizard for current repo                      |
+| `bonsai grow <branch>`  | `add`, `new`   | Create worktree, run setup, open editor                        |
+| `bonsai prune [branch]` | `rm`, `remove` | Remove worktree(s) (interactive multi-select or single branch) |
+| `bonsai list`           | `ls`           | List all worktrees                                             |
+| `bonsai switch <name>`  |                | cd to worktree _(requires shell completions)_                  |
+| `bonsai open`           | `bloom`        | Open current worktree in configured editor                     |
+| `bonsai setup`          |                | Re-run setup commands in current worktree                      |
+| `bonsai config`         |                | Open config in `$EDITOR`                                       |
+| `bonsai completions`    |                | Install shell integration                                      |
+| `bonsai upgrade`        |                | Install or upgrade to latest release                           |
 
 ## Configuration
 
@@ -163,7 +166,21 @@ When you run `bonsai grow feature/auth`:
 
 ### How `prune` works
 
-**TL;DR:** When you're done with a worktree, run `bonsai prune <branch>` once. Bonsai removes that worktree folder safely (and prompts if you have uncommitted changes). The branch stays in git - only the extra working directory is removed. The steps below are what happens under the hood.
+**TL;DR:** When you're done with worktrees, run `bonsai prune` for interactive multi-select, or `bonsai prune <branch>` for a single worktree. Bonsai removes worktree folders safely (prompts if you have uncommitted changes). The branch stays in git - only the extra working directory is removed.
+
+#### Interactive multi-select mode
+
+When you run `bonsai prune` (no arguments):
+
+1. **Lists** all worktrees with status indicators (clean/dirty)
+2. **Shows** fzf-like multi-select interface to choose worktrees
+3. **Processes** each selected worktree individually:
+   - Checks for uncommitted changes
+   - Shows changed files and asks for confirmation if dirty
+   - Removes the worktree with appropriate force flag
+4. **Reports** summary of successful/failed operations
+
+#### Single branch mode
 
 When you run `bonsai prune feature/auth`:
 
@@ -232,7 +249,7 @@ Running `bonsai completions` adds:
 
 - **Tab completion** for all commands
 - **Branch completion** for `grow` (local and remote)
-- **Worktree completion** for `prune` and `switch`
+- **Worktree completion** for `prune` (single branch mode) and `switch`
 - **`bonsai switch`** to cd into worktrees (requires shell integration; a subprocess can't change the parent shell's directory)
 - **Optional: cd after `grow`** — if `[behavior] navigate_after_grow = true`, the shell will cd into the new worktree after a successful `bonsai grow` so your terminal session follows the new branch
 
@@ -255,6 +272,9 @@ bonsai grow hotfix/security-fix
 
 # Fix bug, commit, push, merge...
 bonsai prune hotfix/security-fix
+
+# Or clean up multiple worktrees at once
+bonsai prune     # Interactive multi-select interface
 
 # Back to feature (with shell completions)
 bonsai switch feature-payments
@@ -279,6 +299,15 @@ Branch feature/auth has a stale worktree reference at:
   .../myapp.worktrees/old-path (directory no longer exists)
 
 ? Prune stale worktree references and continue? (Y/n)
+```
+
+**Multi-select prune interface**
+
+```
+Select worktrees to remove:
+◆  feature-auth      clean
+◆  hotfix-bug        dirty (2 files)
+◆  release-v2        clean
 ```
 
 **Uncommitted changes on prune**
@@ -326,7 +355,7 @@ src/
   commands/
     init.ts           # Interactive setup wizard
     grow.ts           # Create worktree + setup + editor
-    prune.ts          # Remove worktree with safety checks
+    prune.ts          # Remove worktree(s) with multi-select and safety checks
     list.ts           # List worktrees
     open.ts           # Open current worktree in configured editor
     setup.ts          # Re-run setup commands

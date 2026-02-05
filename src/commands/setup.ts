@@ -13,9 +13,7 @@ export async function setupCommand(): Promise<void> {
   // Load config
   const configResult = await findConfigForCwd();
   if (!configResult) {
-    p.cancel(
-      `No bonsai config found. Run ${pc.cyan("bonsai init")} first.`
-    );
+    p.cancel(`No bonsai config found. Run ${pc.cyan("bonsai init")} first.`);
     process.exit(1);
   }
 
@@ -41,7 +39,9 @@ export async function setupCommand(): Promise<void> {
 
   for (let i = 0; i < setupCommands.length; i++) {
     const cmd = setupCommands[i]!;
-    console.log(pc.cyan(`━━━ [${i + 1}/${setupCommands.length}] `) + pc.bold(cmd) + pc.cyan(` ━━━`));
+    console.log(
+      pc.cyan(`━━━ [${i + 1}/${setupCommands.length}] `) + pc.bold(cmd) + pc.cyan(` ━━━`)
+    );
     console.log();
 
     const result = await runCommandWithLogs(cmd, worktreePath);
@@ -56,7 +56,9 @@ export async function setupCommand(): Promise<void> {
       // Stop on first failure
       if (i < setupCommands.length - 1) {
         console.log();
-        console.log(pc.yellow(`Stopping setup. ${setupCommands.length - i - 1} command(s) remaining.`));
+        console.log(
+          pc.yellow(`Stopping setup. ${setupCommands.length - i - 1} command(s) remaining.`)
+        );
         console.log(pc.dim(`Fix the issue and run ${pc.cyan("bonsai setup")} again to retry.`));
       }
       break;
