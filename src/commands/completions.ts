@@ -57,7 +57,7 @@ _bonsai_complete() {
                     worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
                     if [[ -d "\$worktree_base" ]]; then
                         local worktrees
-                        worktrees=(\${(f)"\$(ls -1 "\$worktree_base" 2>/dev/null)"})
+                        worktrees=(\${(f)"\$(ls -t "\$worktree_base" 2>/dev/null)"})
                         _describe 'worktrees' worktrees
                     fi
                 fi
@@ -72,31 +72,46 @@ compdef _bonsai_complete bonsai
 
 bonsai() {
     if [[ "\$1" == "switch" ]]; then
-        if [[ -z "\$2" ]]; then
-            echo "Usage: bonsai switch <worktree-name>" >&2
-            return 1
-        fi
-        # Validate worktree name - reject path traversal and absolute paths
-        if [[ "\$2" == *".."* || "\$2" == /* || "\$2" == *"/"* ]]; then
-            echo "Invalid worktree name: must be a simple name without path separators" >&2
-            return 1
-        fi
-        local repo_slug config_file worktree_base target_dir
+        local repo_slug config_file worktree_base target_dir worktree_name
         repo_slug=\$(_bonsai_repo_slug)
         config_file="\${XDG_CONFIG_HOME:-\$HOME/.config}/bonsai/\${repo_slug}.toml"
-        if [[ -f "\$config_file" ]]; then
-            worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
-            target_dir="\${worktree_base}/\$2"
-            if [[ -d "\$target_dir" ]]; then
-                cd "\$target_dir" || return 1
-                echo "🌳 \$target_dir"
-                return 0
+
+        if [[ ! -f "\$config_file" ]]; then
+            echo "No bonsai config found. Run 'bonsai init' first." >&2
+            return 1
+        fi
+
+        worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
+
+        if [[ -z "\$2" ]]; then
+            # No argument - use fzf if available, otherwise show error
+            if command -v fzf &>/dev/null && [[ -d "\$worktree_base" ]]; then
+                # List worktrees sorted by modification time (most recent first)
+                worktree_name=\$(ls -t "\$worktree_base" 2>/dev/null | fzf --height=40% --reverse --prompt="Switch to worktree: ")
+                if [[ -z "\$worktree_name" ]]; then
+                    return 0  # User cancelled fzf
+                fi
             else
-                echo "Worktree not found: \$target_dir" >&2
+                echo "Usage: bonsai switch <worktree-name>" >&2
                 return 1
             fi
         else
-            echo "No bonsai config found. Run 'bonsai init' first." >&2
+            worktree_name="\$2"
+        fi
+
+        # Validate worktree name - reject path traversal and absolute paths
+        if [[ "\$worktree_name" == *".."* || "\$worktree_name" == /* || "\$worktree_name" == *"/"* ]]; then
+            echo "Invalid worktree name: must be a simple name without path separators" >&2
+            return 1
+        fi
+
+        target_dir="\${worktree_base}/\$worktree_name"
+        if [[ -d "\$target_dir" ]]; then
+            cd "\$target_dir" || return 1
+            echo "🌳 \$target_dir"
+            return 0
+        else
+            echo "Worktree not found: \$target_dir" >&2
             return 1
         fi
     elif [[ "\$1" == "grow" || "\$1" == "add" || "\$1" == "new" ]] && [[ -n "\$2" ]]; then
@@ -157,7 +172,7 @@ _bonsai_complete() {
             if [[ -f "\$config_file" ]]; then
                 worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
                 if [[ -d "\$worktree_base" ]]; then
-                    worktrees=\$(ls -1 "\$worktree_base" 2>/dev/null)
+                    worktrees=\$(ls -t "\$worktree_base" 2>/dev/null)
                     COMPREPLY=( \$(compgen -W "\${worktrees}" -- "\${cur}") )
                 fi
             fi
@@ -178,31 +193,46 @@ complete -F _bonsai_complete bonsai
 
 bonsai() {
     if [[ "\$1" == "switch" ]]; then
-        if [[ -z "\$2" ]]; then
-            echo "Usage: bonsai switch <worktree-name>" >&2
-            return 1
-        fi
-        # Validate worktree name - reject path traversal and absolute paths
-        if [[ "\$2" == *".."* || "\$2" == /* || "\$2" == *"/"* ]]; then
-            echo "Invalid worktree name: must be a simple name without path separators" >&2
-            return 1
-        fi
-        local repo_slug config_file worktree_base target_dir
+        local repo_slug config_file worktree_base target_dir worktree_name
         repo_slug=\$(_bonsai_repo_slug)
         config_file="\${XDG_CONFIG_HOME:-\$HOME/.config}/bonsai/\${repo_slug}.toml"
-        if [[ -f "\$config_file" ]]; then
-            worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
-            target_dir="\${worktree_base}/\$2"
-            if [[ -d "\$target_dir" ]]; then
-                cd "\$target_dir" || return 1
-                echo "🌳 \$target_dir"
-                return 0
+
+        if [[ ! -f "\$config_file" ]]; then
+            echo "No bonsai config found. Run 'bonsai init' first." >&2
+            return 1
+        fi
+
+        worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
+
+        if [[ -z "\$2" ]]; then
+            # No argument - use fzf if available, otherwise show error
+            if command -v fzf &>/dev/null && [[ -d "\$worktree_base" ]]; then
+                # List worktrees sorted by modification time (most recent first)
+                worktree_name=\$(ls -t "\$worktree_base" 2>/dev/null | fzf --height=40% --reverse --prompt="Switch to worktree: ")
+                if [[ -z "\$worktree_name" ]]; then
+                    return 0  # User cancelled fzf
+                fi
             else
-                echo "Worktree not found: \$target_dir" >&2
+                echo "Usage: bonsai switch <worktree-name>" >&2
                 return 1
             fi
         else
-            echo "No bonsai config found. Run 'bonsai init' first." >&2
+            worktree_name="\$2"
+        fi
+
+        # Validate worktree name - reject path traversal and absolute paths
+        if [[ "\$worktree_name" == *".."* || "\$worktree_name" == /* || "\$worktree_name" == *"/"* ]]; then
+            echo "Invalid worktree name: must be a simple name without path separators" >&2
+            return 1
+        fi
+
+        target_dir="\${worktree_base}/\$worktree_name"
+        if [[ -d "\$target_dir" ]]; then
+            cd "\$target_dir" || return 1
+            echo "🌳 \$target_dir"
+            return 0
+        else
+            echo "Worktree not found: \$target_dir" >&2
             return 1
         fi
     elif [[ "\$1" == "grow" || "\$1" == "add" || "\$1" == "new" ]] && [[ -n "\$2" ]]; then
