@@ -152,7 +152,9 @@ export async function sendCommand(worktreeName?: string, options?: SendOptions):
     const spinner = p.spinner();
     spinner.start("Loading worktrees");
 
-    const worktrees = await getAllWorktreesWithContext(config.repo.worktree_base, aiTool);
+    // Skip session tracking during initial load for performance
+    // Session checking can be very slow if there are many sessions
+    const worktrees = await getAllWorktreesWithContext(config.repo.worktree_base, null);
 
     spinner.stop("Loaded worktrees");
 
