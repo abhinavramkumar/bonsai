@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { findConfigForCwd } from "../lib/config.js";
 import { runCommandWithLogs } from "../lib/runner.js";
+import { getRepoRoot } from "../lib/git.js";
 
 /**
  * Run setup commands from the git repository root
@@ -18,7 +19,7 @@ export async function setupCommand(): Promise<void> {
     process.exit(1);
   }
 
-  const { config, repoPath } = configResult;
+  const { config } = configResult;
   const setupCommands = config.setup.commands || [];
 
   if (setupCommands.length === 0) {
@@ -28,8 +29,13 @@ export async function setupCommand(): Promise<void> {
     return;
   }
 
-  // Always run setup commands from the git repository root
-  const worktreePath = repoPath;
+  // Always run setup commands from the current git repository root
+  // (worktree root if in worktree, main repo root if in main repo)
+  const worktreePath = await getRepoRoot();
+  if (!worktreePath) {
+    p.cancel("Could not determine git repository root.");
+    process.exit(1);
+  }
 
   console.log();
   console.log(pc.bold(`Running ${setupCommands.length} setup command(s)...`));
