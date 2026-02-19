@@ -4,7 +4,8 @@ import { findConfigForCwd } from "../lib/config.js";
 import { runCommandWithLogs } from "../lib/runner.js";
 
 /**
- * Run setup commands on the current worktree
+ * Run setup commands from the git repository root
+ * Commands always execute from repo root, regardless of current directory
  * Useful for retrying after a failed setup or setting up an existing worktree
  */
 export async function setupCommand(): Promise<void> {
@@ -17,7 +18,7 @@ export async function setupCommand(): Promise<void> {
     process.exit(1);
   }
 
-  const { config } = configResult;
+  const { config, repoPath } = configResult;
   const setupCommands = config.setup.commands || [];
 
   if (setupCommands.length === 0) {
@@ -27,8 +28,8 @@ export async function setupCommand(): Promise<void> {
     return;
   }
 
-  // Get current directory as the worktree path
-  const worktreePath = process.cwd();
+  // Always run setup commands from the git repository root
+  const worktreePath = repoPath;
 
   console.log();
   console.log(pc.bold(`Running ${setupCommands.length} setup command(s)...`));
