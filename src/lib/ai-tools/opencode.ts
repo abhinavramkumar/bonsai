@@ -1,5 +1,8 @@
 import { spawn, which } from "bun";
 import { $ } from "bun";
+import { homedir } from "os";
+import { join } from "path";
+import { mkdir } from "fs/promises";
 import type { AITool, AISession } from "../ai-tool.js";
 
 /**
@@ -31,17 +34,36 @@ export class OpenCodeTool implements AITool {
       return;
     }
 
-    // Background mode - detach process
-    const proc = spawn(["opencode", ...args], {
-      cwd: worktreePath,
-      stdout: "ignore",
-      stderr: "ignore",
-      stdin: "ignore",
+    // Background mode - detach process with log file
+    const logDir = join(homedir(), ".cache", "bonsai", "logs");
+    await mkdir(logDir, { recursive: true });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const worktreeName = worktreePath.split("/").pop() || "unknown";
+    const logFile = join(logDir, `${worktreeName}-${timestamp}.log`);
+
+    // Use shell redirection for proper log file handling
+    const escapedPrompt = prompt.replace(/"/g, '\\"');
+    const shellCmd = `cd "${worktreePath}" && opencode "${worktreePath}" --prompt "${escapedPrompt}" >> "${logFile}" 2>&1 & echo $!`;
+
+    const proc = spawn(["bash", "-c", shellCmd], {
       detached: true,
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "ignore",
     });
 
-    // Unref so parent process can exit
     proc.unref();
+
+    // Store log file path for retrieval
+    this._lastLogFile = logFile;
+  }
+
+  // Store last log file path for retrieval by caller
+  private _lastLogFile?: string;
+
+  getLastLogFile(): string | undefined {
+    return this._lastLogFile;
   }
 
   async listSessions(): Promise<AISession[]> {

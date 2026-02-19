@@ -49,6 +49,11 @@ export interface AITool {
    * Attach to an existing session (resume interactively)
    */
   attachToSession?(directory: string, sessionId?: string): Promise<void>;
+
+  /**
+   * Get the log file path for the most recently started background session
+   */
+  getLastLogFile?(): string | undefined;
 }
 
 /**

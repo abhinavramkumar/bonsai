@@ -1,7 +1,7 @@
 import { spawn, which } from "bun";
 import { homedir } from "os";
 import { join } from "path";
-import { readdir, stat } from "fs/promises";
+import { readdir, stat, mkdir } from "fs/promises";
 import type { AITool, AISession } from "../ai-tool.js";
 
 /**
@@ -31,11 +31,18 @@ export class ClaudeTool implements AITool {
       return;
     }
 
-    // Background mode - use shell wrapper to properly detach
+    // Background mode - use shell wrapper with log file
     // Claude must be run from the target directory
+    const logDir = join(homedir(), ".cache", "bonsai", "logs");
+    await mkdir(logDir, { recursive: true });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const worktreeName = worktreePath.split("/").pop() || "unknown";
+    const logFile = join(logDir, `${worktreeName}-${timestamp}.log`);
+
     // Escape quotes in prompt
     const escapedPrompt = prompt.replace(/"/g, '\\"');
-    const shellCmd = `cd "${worktreePath}" && nohup claude "${escapedPrompt}" </dev/null >/dev/null 2>&1 &`;
+    const shellCmd = `cd "${worktreePath}" && nohup claude "${escapedPrompt}" >> "${logFile}" 2>&1 </dev/null &`;
 
     const proc = spawn(["bash", "-c", shellCmd], {
       detached: true,
@@ -45,6 +52,16 @@ export class ClaudeTool implements AITool {
     });
 
     proc.unref();
+
+    // Store log file path for retrieval
+    this._lastLogFile = logFile;
+  }
+
+  // Store last log file path for retrieval by caller
+  private _lastLogFile?: string;
+
+  getLastLogFile(): string | undefined {
+    return this._lastLogFile;
   }
 
   async listSessions(): Promise<AISession[]> {

@@ -267,19 +267,29 @@ export async function sendCommand(worktreeName?: string, options?: SendOptions):
   console.log();
 
   if (background) {
-    p.note(
-      [
-        `${pc.dim("Worktree:")} ${selectedWorktreeName}`,
-        `${pc.dim("Tool:")} ${toolDisplayName}`,
-        `${pc.dim("Mode:")} Background`,
-      ].join("\n"),
-      "Dispatched"
-    );
+    const logFile = aiTool.getLastLogFile?.();
 
-    p.outro(
-      `${toolDisplayName} is working in the background.\n` +
-        `Check progress with ${pc.cyan("bonsai agent status")}`
-    );
+    const noteLines = [
+      `${pc.dim("Worktree:")} ${selectedWorktreeName}`,
+      `${pc.dim("Tool:")} ${toolDisplayName}`,
+      `${pc.dim("Mode:")} Background`,
+    ];
+
+    if (logFile) {
+      noteLines.push(`${pc.dim("Log:")} ${logFile}`);
+    }
+
+    p.note(noteLines.join("\n"), "Dispatched");
+
+    let outroMessage = `${toolDisplayName} is working in the background.\n`;
+
+    if (logFile) {
+      outroMessage += `\nView output: ${pc.cyan(`tail -f ${logFile}`)}\n`;
+    }
+
+    outroMessage += `Check progress: ${pc.cyan("bonsai agent status")}`;
+
+    p.outro(outroMessage);
   } else {
     p.outro("Session ended");
   }
