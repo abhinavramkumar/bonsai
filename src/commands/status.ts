@@ -15,9 +15,21 @@ interface EnhancedSessionEntry extends SessionEntry {
 }
 
 /**
+ * Status command options
+ */
+export interface StatusOptions {
+  watch?: boolean; // Auto-refresh every few seconds
+}
+
+/**
  * Status command - show active AI sessions in a telescope-like interface
  */
-export async function statusCommand(): Promise<void> {
+export async function statusCommand(options?: StatusOptions): Promise<void> {
+  // If watch mode, run in a loop with refresh
+  if (options?.watch) {
+    return watchStatusCommand();
+  }
+
   p.intro(pc.bgMagenta(pc.black(" bonsai status ")));
 
   // Load config
@@ -202,33 +214,34 @@ async function showSessionDetail(session: EnhancedSessionEntry, toolName: string
   const timeAgo = getTimeAgo(startedAt);
   const status = session.isActive ? pc.green("Active") : pc.red("Inactive");
 
-  const details = [
-    `${pc.dim("Worktree:")} ${pc.bold(session.worktreeName)}`,
-    `${pc.dim("Path:")} ${session.worktreePath}`,
-    `${pc.dim("Status:")} ${status}`,
-    `${pc.dim("Tool:")} ${toolName}`,
-    `${pc.dim("Started:")} ${startedAt.toLocaleString()} (${timeAgo})`,
-    "",
-    `${pc.dim("Prompt:")}`,
-    session.prompt,
-  ];
+  // Use plain console.log instead of p.note to avoid box-drawing artifacts
+  console.log();
+  console.log(pc.bold(pc.underline("Session Details")));
+  console.log();
+  console.log(`  ${pc.dim("Worktree:")} ${pc.bold(session.worktreeName)}`);
+  console.log(`  ${pc.dim("Path:")} ${session.worktreePath}`);
+  console.log(`  ${pc.dim("Status:")} ${status}`);
+  console.log(`  ${pc.dim("Tool:")} ${toolName}`);
+  console.log(`  ${pc.dim("Started:")} ${startedAt.toLocaleString()} (${timeAgo})`);
+  console.log();
+  console.log(`  ${pc.dim("Prompt:")}`);
+  console.log(`  ${session.prompt.split("\n").join("\n  ")}`);
 
   if (session.aiSession) {
-    details.push("");
-    details.push(`${pc.dim("Session ID:")} ${session.aiSession.id}`);
+    console.log();
+    console.log(`  ${pc.dim("Session ID:")} ${session.aiSession.id}`);
     if (session.aiSession.title) {
-      details.push(`${pc.dim("Title:")} ${session.aiSession.title}`);
+      console.log(`  ${pc.dim("Title:")} ${session.aiSession.title}`);
     }
     if (session.aiSession.lastUpdated) {
       const updated =
         typeof session.aiSession.lastUpdated === "string"
           ? session.aiSession.lastUpdated
           : getTimeAgo(session.aiSession.lastUpdated);
-      details.push(`${pc.dim("Last Updated:")} ${updated}`);
+      console.log(`  ${pc.dim("Last Updated:")} ${updated}`);
     }
   }
-
-  p.note(details.join("\n"), "Session Details");
+  console.log();
 }
 
 /**
@@ -281,4 +294,110 @@ function getTimeAgo(date: Date): string {
 
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+/**
+ * Watch mode - continuously refresh session status
+ */
+async function watchStatusCommand(): Promise<void> {
+  // Load config once
+  const configResult = await findConfigForCwd();
+  if (!configResult) {
+    console.error(`No bonsai config found. Run ${pc.cyan("bonsai init")} first.`);
+    process.exit(1);
+  }
+
+  const { config } = configResult;
+
+  // Create AI tool instance
+  const aiTool = await createAITool(config.ai_tool);
+  if (!aiTool) {
+    console.error(`Failed to initialize AI tool: ${config.ai_tool?.name}`);
+    process.exit(1);
+  }
+
+  // Clear screen and show header
+  const clearScreen = () => {
+    process.stdout.write("\x1b[2J\x1b[H");
+  };
+
+  // Handle Ctrl+C gracefully
+  let shouldExit = false;
+  process.on("SIGINT", () => {
+    shouldExit = true;
+    console.log();
+    console.log(pc.dim("Exiting watch mode..."));
+    process.exit(0);
+  });
+
+  // Refresh loop
+  while (!shouldExit) {
+    clearScreen();
+
+    // Show header
+    console.log(pc.bold(pc.bgMagenta(pc.black(" bonsai status --watch "))));
+    console.log();
+    console.log(pc.dim(`Refreshing every 3 seconds... Press ${pc.bold("Ctrl+C")} to exit`));
+    console.log();
+
+    // Load sessions
+    const registrySessions = await getAllSessions();
+
+    if (registrySessions.length === 0) {
+      console.log(pc.dim("No sessions tracked yet."));
+      console.log(pc.dim(`Run ${pc.cyan("bonsai agent send")} to dispatch work to a worktree.`));
+    } else {
+      // Enrich sessions with AI tool status
+      const enhancedSessions: EnhancedSessionEntry[] = [];
+
+      for (const session of registrySessions) {
+        let aiSession: AISession | null = null;
+        let isActive = false;
+
+        if (aiTool.supportsSessionTracking() && aiTool.findSessionForDirectory) {
+          try {
+            aiSession = await aiTool.findSessionForDirectory(session.worktreePath);
+            isActive = aiSession !== null;
+          } catch {
+            // Ignore errors, mark as inactive
+          }
+        }
+
+        enhancedSessions.push({
+          ...session,
+          aiSession,
+          isActive,
+        });
+      }
+
+      // Display summary
+      const activeSessions = enhancedSessions.filter((s) => s.isActive);
+      console.log(
+        pc.bold(
+          `Active Sessions: ${pc.green(activeSessions.length.toString())}/${enhancedSessions.length}`
+        )
+      );
+      console.log();
+
+      // Display each session
+      for (const session of enhancedSessions) {
+        const status = session.isActive ? pc.green("●") : pc.dim("○");
+        const timeAgo = getTimeAgo(new Date(session.startedAt));
+        const promptPreview =
+          session.prompt.length > 60 ? session.prompt.substring(0, 57) + "..." : session.prompt;
+
+        console.log(`${status} ${pc.bold(session.worktreeName)} ${pc.dim(`(${timeAgo})`)}`);
+        console.log(`  ${pc.dim(promptPreview)}`);
+
+        if (session.aiSession?.title) {
+          console.log(`  ${pc.dim("Title:")} ${session.aiSession.title}`);
+        }
+
+        console.log();
+      }
+    }
+
+    // Wait 3 seconds before next refresh
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
 }

@@ -19,10 +19,13 @@ export async function agentCommand(args: string[]): Promise<void> {
     case "delegate": {
       // Parse options and worktree name from remaining args
       const remainingArgs = args.slice(1);
-      const worktreeName = remainingArgs.find((arg) => !arg.startsWith("--"));
+      const worktreeName = remainingArgs.find(
+        (arg) => !arg.startsWith("--") && !arg.startsWith("-")
+      );
       const options = {
         edit: remainingArgs.includes("--edit"),
         attach: remainingArgs.includes("--attach"),
+        follow: remainingArgs.includes("--follow") || remainingArgs.includes("-f"),
       };
 
       const { sendCommand } = await import("./send.js");
@@ -32,8 +35,13 @@ export async function agentCommand(args: string[]): Promise<void> {
 
     case "status":
     case "list": {
+      const remainingArgs = args.slice(1);
+      const options = {
+        watch: remainingArgs.includes("--watch") || remainingArgs.includes("-w"),
+      };
+
       const { statusCommand } = await import("./status.js");
-      await statusCommand();
+      await statusCommand(options);
       break;
     }
 
@@ -77,12 +85,22 @@ ${pc.bold("Examples:")}
   ${pc.dim("# Interactive mode (not background)")}
   $ bonsai agent send feature-auth --attach
 
+  ${pc.dim("# Background with live output")}
+  $ bonsai agent send feature-auth --follow
+
   ${pc.dim("# Show active AI sessions (telescope UI)")}
   $ bonsai agent status
+
+  ${pc.dim("# Watch mode - auto-refresh status every 3 seconds")}
+  $ bonsai agent status --watch
 
 ${pc.bold("Send Options:")}
   ${pc.dim("--edit")}              Open $EDITOR for multi-line prompt
   ${pc.dim("--attach")}            Run in interactive mode instead of background
+  ${pc.dim("-f, --follow")}        Tail log file after dispatching (background mode only)
+
+${pc.bold("Status Options:")}
+  ${pc.dim("-w, --watch")}         Auto-refresh status every 3 seconds
 
 ${pc.bold("AI Tools Supported:")}
   - OpenCode (https://opencode.ai)

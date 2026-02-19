@@ -14,6 +14,7 @@ import { getAllWorktreesWithContext, pickWorktreeWithFzf } from "../lib/worktree
 export interface SendOptions {
   edit?: boolean; // Open $EDITOR for multi-line prompt
   attach?: boolean; // Attach interactively instead of background
+  follow?: boolean; // Tail log file after dispatching (background mode only)
 }
 
 /**
@@ -281,15 +282,43 @@ export async function sendCommand(worktreeName?: string, options?: SendOptions):
 
     p.note(noteLines.join("\n"), "Dispatched");
 
-    let outroMessage = `${toolDisplayName} is working in the background.\n`;
+    // If follow mode is enabled, tail the log file
+    if (options?.follow && logFile) {
+      console.log();
+      console.log(pc.dim(`Following log output (Press ${pc.bold("Ctrl+C")} to stop)...`));
+      console.log();
 
-    if (logFile) {
-      outroMessage += `\nView output: ${pc.cyan(`tail -f ${logFile}`)}\n`;
+      // Wait a moment for the log file to be created
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Use tail -f to follow the log file
+      const tailProc = spawn(["tail", "-f", logFile], {
+        stdout: "inherit",
+        stderr: "inherit",
+        stdin: "ignore",
+      });
+
+      // Handle Ctrl+C to exit gracefully
+      process.on("SIGINT", () => {
+        tailProc.kill();
+        console.log();
+        console.log(pc.dim("Stopped following log."));
+        console.log(pc.dim(`Resume with: ${pc.cyan(`tail -f ${logFile}`)}`));
+        process.exit(0);
+      });
+
+      await tailProc.exited;
+    } else {
+      let outroMessage = `${toolDisplayName} is working in the background.\n`;
+
+      if (logFile) {
+        outroMessage += `\nView output: ${pc.cyan(`tail -f ${logFile}`)}\n`;
+      }
+
+      outroMessage += `Check progress: ${pc.cyan("bonsai agent status")}`;
+
+      p.outro(outroMessage);
     }
-
-    outroMessage += `Check progress: ${pc.cyan("bonsai agent status")}`;
-
-    p.outro(outroMessage);
   } else {
     p.outro("Session ended");
   }
