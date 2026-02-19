@@ -3,6 +3,7 @@ import pc from "picocolors";
 import { saveConfig, configExists, getConfigPath, type BonsaiConfig } from "../lib/config.js";
 import { isGitRepo, getRepoRoot, getDefaultMainBranchName, fetchRemote } from "../lib/git.js";
 import { isEditorAvailable, type EditorName } from "../lib/editor.js";
+import { detectAvailableAITools, getAIToolDisplayName } from "../lib/ai-tool.js";
 
 /**
  * Initialize bonsai configuration for a repository
@@ -103,6 +104,38 @@ export async function initCommand(): Promise<void> {
             "After 'bonsai grow', cd into the new worktree in this terminal? (requires shell integration)",
           initialValue: false,
         }),
+
+      aiTool: async () => {
+        // Detect available AI tools
+        const availableTools = await detectAvailableAITools();
+
+        if (availableTools.length === 0) {
+          p.log.info(
+            pc.dim(
+              "No AI coding tools detected (OpenCode or Claude). You can install one later to use 'bonsai send'."
+            )
+          );
+          return null;
+        }
+
+        if (availableTools.length === 1) {
+          const toolName = availableTools[0]!;
+          p.log.info(`Detected: ${getAIToolDisplayName(toolName)}`);
+          return toolName;
+        }
+
+        // Multiple tools available - let user choose
+        return p.select({
+          message: "AI coding assistant (for 'bonsai send' command)",
+          options: [
+            ...availableTools.map((tool) => ({
+              value: tool,
+              label: getAIToolDisplayName(tool),
+            })),
+            { value: null, label: "Skip for now" },
+          ],
+        });
+      },
     },
     {
       onCancel: () => {
@@ -143,6 +176,7 @@ export async function initCommand(): Promise<void> {
     behavior: {
       navigate_after_grow: config.navigateAfterGrow === true,
     },
+    ai_tool: config.aiTool ? { name: config.aiTool as "opencode" | "claude" } : null,
   };
 
   // Save config

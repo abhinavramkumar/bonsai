@@ -24,6 +24,7 @@ A Git worktree CLI that creates a full environment per branch: a dedicated direc
 - **Isolated envs** — Each branch gets its own directory, `node_modules`, build artifacts, and editor state.
 - **No stash** — Your current branch and editor stay untouched; no conflicts, no mental overhead.
 - **Shell integration** — Tab-complete branches; `bonsai switch` to jump between worktrees.
+- **AI workflow** — `bonsai agent send` dispatches work to worktrees using OpenCode or Claude, work on multiple branches in parallel.
 
 ## Why bonsai?
 
@@ -103,18 +104,45 @@ That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`
 
 ## Commands
 
-| Command                 | Aliases        | Description                                                    |
-| ----------------------- | -------------- | -------------------------------------------------------------- |
-| `bonsai init`           |                | Interactive setup wizard for current repo                      |
-| `bonsai grow <branch>`  | `add`, `new`   | Create worktree, run setup, open editor                        |
-| `bonsai prune [branch]` | `rm`, `remove` | Remove worktree(s) (interactive multi-select or single branch) |
-| `bonsai list`           | `ls`           | List all worktrees                                             |
-| `bonsai switch <name>`  |                | cd to worktree _(requires shell completions)_                  |
-| `bonsai open`           | `bloom`        | Open current worktree in configured editor                     |
-| `bonsai setup`          |                | Re-run setup commands in current worktree                      |
-| `bonsai config`         |                | Open config in `$EDITOR`                                       |
-| `bonsai completions`    |                | Install shell integration                                      |
-| `bonsai upgrade`        |                | Install or upgrade to latest release                           |
+| Command                  | Aliases                | Description                                                    |
+| ------------------------ | ---------------------- | -------------------------------------------------------------- |
+| `bonsai init`            |                        | Interactive setup wizard for current repo                      |
+| `bonsai grow <branch>`   | `add`, `new`           | Create worktree, run setup, open editor                        |
+| `bonsai prune [branch]`  | `rm`, `remove`         | Remove worktree(s) (interactive multi-select or single branch) |
+| `bonsai list`            | `ls`                   | List all worktrees                                             |
+| `bonsai agent send [worktree]` | `dispatch`, `delegate` | Dispatch work to worktree with AI (OpenCode/Claude)            |
+| `bonsai agent status`          |                        | Show active AI sessions (telescope-like interface)             |
+| `bonsai switch <name>`   |                        | cd to worktree _(requires shell completions)_                  |
+| `bonsai open`            | `bloom`                | Open current worktree in configured editor                     |
+| `bonsai setup`           |                        | Re-run setup commands in current worktree                      |
+| `bonsai config`          |                        | Open config in `$EDITOR`                                       |
+| `bonsai completions`     |                        | Install shell integration                                      |
+| `bonsai upgrade`         |                        | Install or upgrade to latest release                           |
+
+### AI Workflow
+
+Dispatch work to worktrees in parallel using AI coding assistants:
+
+```bash
+# Dispatch task to a worktree
+bonsai agent send feature-auth "add unit tests for authentication"
+
+# Interactive worktree picker
+bonsai agent send
+
+# Show active sessions (telescope-like UI)
+bonsai agent status
+
+# Multi-line prompt via $EDITOR
+bonsai agent send feature-api --edit
+
+# Interactive mode (not background)
+bonsai agent send feature-auth --attach
+```
+
+**Supported AI tools:** OpenCode, Claude Code
+
+📖 **[Full AI Workflow Documentation](docs/AI_WORKFLOW.md)**
 
 ## Configuration
 

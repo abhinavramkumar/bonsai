@@ -45,6 +45,7 @@ ${pc.bold("Commands:")}
   ${pc.cyan("grow")} <branch>     Create a worktree for a branch ${pc.dim("(alias: add, new)")}
   ${pc.cyan("prune")} [branch]    Remove a worktree ${pc.dim("(alias: rm, remove)")}
   ${pc.cyan("list")}              List all worktrees ${pc.dim("(alias: ls)")}
+  ${pc.cyan("agent")} <cmd>       AI workflow management ${pc.dim("(send, status)")}
   ${pc.cyan("switch")} <name>     Switch to a worktree ${pc.dim("(requires shell completions)")}
   ${pc.cyan("open")}              Open current worktree in configured editor ${pc.dim("(alias: bloom)")}
   ${pc.cyan("setup")}             Run setup commands in current worktree
@@ -77,6 +78,11 @@ ${pc.bold("Examples:")}
 
   ${pc.dim("# Re-run setup commands (e.g., after a failure)")}
   $ bonsai switch feature-auth && bonsai setup
+
+  ${pc.dim("# AI workflow - dispatch work to worktrees")}
+  $ bonsai agent send              ${pc.dim("(interactive picker)")}
+  $ bonsai agent send feature-auth ${pc.dim("(direct)")}
+  $ bonsai agent status            ${pc.dim("(show active sessions)")}
 
 ${pc.bold("Config:")}
   Config is stored at ${pc.dim("$XDG_CONFIG_HOME/bonsai/<repo>.toml")}
@@ -175,6 +181,12 @@ async function main(): Promise<void> {
     case "upgrade": {
       const { upgradeCommand } = await import("./commands/upgrade.js");
       await upgradeCommand();
+      break;
+    }
+
+    case "agent": {
+      const { agentCommand } = await import("./commands/agent.js");
+      await agentCommand(args.slice(1));
       break;
     }
 

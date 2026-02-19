@@ -22,7 +22,7 @@ _bonsai_repo_slug() {
 }
 
 _bonsai_complete() {
-    local commands="init grow add new prune rm remove list ls open bloom setup config switch completions"
+    local commands="init grow add new prune rm remove list ls agent open bloom setup config switch completions"
     
     if [[ \${#words[@]} -eq 2 ]]; then
         _describe 'commands' "(
@@ -35,6 +35,7 @@ _bonsai_complete() {
             remove:'Remove a worktree (alias for prune)'
             list:'List all worktrees'
             ls:'List all worktrees (alias)'
+            agent:'AI workflow management'
             switch:'Switch to a worktree'
             open:'Open current worktree in configured editor'
             bloom:'Open current worktree in configured editor (alias for open)'
@@ -62,8 +63,37 @@ _bonsai_complete() {
                     fi
                 fi
                 ;;
+            agent)
+                _describe 'agent-subcommands' "(
+                    send:'Dispatch work to a worktree'
+                    dispatch:'Dispatch work (alias for send)'
+                    delegate:'Dispatch work (alias for send)'
+                    status:'Show active AI sessions'
+                    list:'Show active sessions (alias for status)'
+                )"
+                ;;
             completions)
                 _describe 'shells' "(zsh bash)"
+                ;;
+        esac
+    elif [[ \${#words[@]} -eq 4 ]]; then
+        case "\${words[2]}" in
+            agent)
+                case "\${words[3]}" in
+                    send|dispatch|delegate)
+                        local repo_slug config_file worktree_base
+                        repo_slug=\$(_bonsai_repo_slug)
+                        config_file="\${XDG_CONFIG_HOME:-\$HOME/.config}/bonsai/\${repo_slug}.toml"
+                        if [[ -f "\$config_file" ]]; then
+                            worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
+                            if [[ -d "\$worktree_base" ]]; then
+                                local worktrees
+                                worktrees=(\${(f)"\$(ls -t "\$worktree_base" 2>/dev/null)"})
+                                _describe 'worktrees' worktrees
+                            fi
+                        fi
+                        ;;
+                esac
                 ;;
         esac
     fi
@@ -156,7 +186,7 @@ _bonsai_complete() {
     COMPREPLY=()
     cur="\${COMP_WORDS[COMP_CWORD]}"
     prev="\${COMP_WORDS[COMP_CWORD-1]}"
-    commands="init grow add new prune rm remove list ls open bloom setup config switch completions"
+    commands="init grow add new prune rm remove list ls agent open bloom setup config switch completions"
 
     case "\${prev}" in
         grow|add|new)
@@ -174,6 +204,26 @@ _bonsai_complete() {
                 if [[ -d "\$worktree_base" ]]; then
                     worktrees=\$(ls -t "\$worktree_base" 2>/dev/null)
                     COMPREPLY=( \$(compgen -W "\${worktrees}" -- "\${cur}") )
+                fi
+            fi
+            return 0
+            ;;
+        agent)
+            COMPREPLY=( \$(compgen -W "send dispatch delegate status list" -- "\${cur}") )
+            return 0
+            ;;
+        send|dispatch|delegate)
+            # Handle "bonsai agent send <worktree>"
+            if [[ "\${COMP_WORDS[1]}" == "agent" ]]; then
+                local repo_slug config_file worktree_base worktrees
+                repo_slug=\$(_bonsai_repo_slug)
+                config_file="\${XDG_CONFIG_HOME:-\$HOME/.config}/bonsai/\${repo_slug}.toml"
+                if [[ -f "\$config_file" ]]; then
+                    worktree_base=\$(grep 'worktree_base' "\$config_file" | sed 's/.*= *"\\(.*\\)"/\\1/')
+                    if [[ -d "\$worktree_base" ]]; then
+                        worktrees=\$(ls -t "\$worktree_base" 2>/dev/null)
+                        COMPREPLY=( \$(compgen -W "\${worktrees}" -- "\${cur}") )
+                    fi
                 fi
             fi
             return 0
