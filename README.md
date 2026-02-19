@@ -14,17 +14,17 @@ One command to work on another branch—separate folder, deps, and editor. No st
 
 </div>
 
-A Git worktree CLI that creates a full environment per branch: a dedicated directory, your setup commands (e.g. `npm install`), and your editor. For when you need to switch context without touching your current work.
+A focused Git worktree CLI that creates a full environment per branch: a dedicated directory, your setup commands (e.g. `npm install`), and your editor. For when you need to switch context without touching your current work.
 
-**Who it's for:** Maintainers juggling hotfixes, anyone who switches between branches often, or anyone who's tired of `git stash` dance.
+**Who it's for:** Developers juggling multiple branches, maintainers handling hotfixes, or anyone tired of the `git stash` dance.
 
 ## Features
 
-- **One command** — `bonsai grow <branch>` creates the worktree, runs setup, and opens your editor.
-- **Isolated envs** — Each branch gets its own directory, `node_modules`, build artifacts, and editor state.
-- **No stash** — Your current branch and editor stay untouched; no conflicts, no mental overhead.
-- **Shell integration** — Tab-complete branches; `bonsai switch` to jump between worktrees.
-- **AI workflow** — `bonsai agent send` dispatches work to worktrees using OpenCode or Claude, work on multiple branches in parallel.
+- **One command** — `bonsai grow <branch>` creates the worktree, runs setup, and opens your editor
+- **Isolated environments** — Each branch gets its own directory, dependencies, build artifacts, and editor state
+- **No stash needed** — Your current branch and editor stay untouched; no conflicts, no mental overhead
+- **Shell integration** — Tab-complete branches; `bonsai switch` to jump between worktrees instantly
+- **Flexible setup** — Configure per-repo setup commands that run automatically in new worktrees
 
 ## Why bonsai?
 
@@ -104,20 +104,20 @@ That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`
 
 ## Commands
 
-| Command                  | Aliases                | Description                                                    |
-| ------------------------ | ---------------------- | -------------------------------------------------------------- |
-| `bonsai init`            |                        | Interactive setup wizard for current repo                      |
-| `bonsai grow <branch>`   | `add`, `new`           | Create worktree, run setup, open editor                        |
-| `bonsai prune [branch]`  | `rm`, `remove`         | Remove worktree(s) (interactive multi-select or single branch) |
-| `bonsai list`            | `ls`                   | List all worktrees                                             |
+| Command                        | Aliases                | Description                                                    |
+| ------------------------------ | ---------------------- | -------------------------------------------------------------- |
+| `bonsai init`                  |                        | Interactive setup wizard for current repo                      |
+| `bonsai grow <branch>`         | `add`, `new`           | Create worktree, run setup, open editor                        |
+| `bonsai prune [branch]`        | `rm`, `remove`         | Remove worktree(s) (interactive multi-select or single branch) |
+| `bonsai list`                  | `ls`                   | List all worktrees                                             |
 | `bonsai agent send [worktree]` | `dispatch`, `delegate` | Dispatch work to worktree with AI (OpenCode/Claude)            |
 | `bonsai agent status`          |                        | Show active AI sessions (telescope-like interface)             |
-| `bonsai switch <name>`   |                        | cd to worktree _(requires shell completions)_                  |
-| `bonsai open`            | `bloom`                | Open current worktree in configured editor                     |
-| `bonsai setup`           |                        | Re-run setup commands in current worktree                      |
-| `bonsai config`          |                        | Open config in `$EDITOR`                                       |
-| `bonsai completions`     |                        | Install shell integration                                      |
-| `bonsai upgrade`         |                        | Install or upgrade to latest release                           |
+| `bonsai switch <name>`         |                        | cd to worktree _(requires shell completions)_                  |
+| `bonsai open`                  | `bloom`                | Open current worktree in configured editor                     |
+| `bonsai setup`                 |                        | Re-run setup commands in current worktree                      |
+| `bonsai config`                |                        | Open config in `$EDITOR`                                       |
+| `bonsai completions`           |                        | Install shell integration                                      |
+| `bonsai upgrade`               |                        | Install or upgrade to latest release                           |
 
 ### AI Workflow
 

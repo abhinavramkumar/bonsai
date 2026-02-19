@@ -27,10 +27,6 @@ export interface BonsaiConfig {
   behavior?: {
     navigate_after_grow?: boolean;
   };
-  /** AI coding assistant configuration for bonsai send/dispatch */
-  ai_tool?: {
-    name: "opencode" | "claude";
-  } | null;
 }
 
 /**
