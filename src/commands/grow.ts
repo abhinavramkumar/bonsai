@@ -146,29 +146,34 @@ export async function growCommand(branchName: string): Promise<void> {
   const editorName = config.editor.name;
   const editorDisplayName = getEditorDisplayName(editorName);
 
-  // Open editor immediately (don't wait for setup)
-  const editorSpinner = p.spinner();
-  editorSpinner.start(`Opening ${editorDisplayName}`);
+  // Check post-creation action: 0 = open editor, 1 = do nothing
+  const postCreationAction = config.behavior?.post_creation_action ?? 0;
+  const shouldOpenEditor = postCreationAction === 0;
 
-  try {
-    await openInEditor(editorName, worktreePath);
-    editorSpinner.stop(`Opened ${editorDisplayName}`);
-  } catch {
-    editorSpinner.stop(`Could not open ${editorDisplayName}`);
-    p.log.warn(
-      `${pc.yellow("Warning:")} Could not open editor. You can manually open: ${pc.dim(worktreePath)}`
-    );
+  // Open editor immediately (don't wait for setup) - only if configured
+  if (shouldOpenEditor) {
+    const editorSpinner = p.spinner();
+    editorSpinner.start(`Opening ${editorDisplayName}`);
+
+    try {
+      await openInEditor(editorName, worktreePath);
+      editorSpinner.stop(`Opened ${editorDisplayName}`);
+    } catch {
+      editorSpinner.stop(`Could not open ${editorDisplayName}`);
+      p.log.warn(
+        `${pc.yellow("Warning:")} Could not open editor. You can manually open: ${pc.dim(worktreePath)}`
+      );
+    }
   }
 
   // Summary (before setup so user knows worktree is ready)
-  p.note(
-    [
-      `${pc.dim("Branch:")} ${branchName}`,
-      `${pc.dim("Path:")} ${worktreePath}`,
-      `${pc.dim("Editor:")} ${editorDisplayName}`,
-    ].join("\n"),
-    "Worktree created"
-  );
+  const summaryLines = [`${pc.dim("Branch:")} ${branchName}`, `${pc.dim("Path:")} ${worktreePath}`];
+
+  if (shouldOpenEditor) {
+    summaryLines.push(`${pc.dim("Editor:")} ${editorDisplayName}`);
+  }
+
+  p.note(summaryLines.join("\n"), "Worktree created");
 
   // Run setup commands if configured
   let setupFailed = false;

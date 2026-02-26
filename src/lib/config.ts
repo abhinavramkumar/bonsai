@@ -26,6 +26,12 @@ export interface BonsaiConfig {
   /** When true, shell integration will cd to the new worktree after \`bonsai grow\` (terminal stays in current dir when false). */
   behavior?: {
     navigate_after_grow?: boolean;
+    /**
+     * What to do after creating a new worktree via `bonsai grow`:
+     * 0 = open editor (legacy default for existing configs)
+     * 1 = do nothing (new default for fresh installs)
+     */
+    post_creation_action?: 0 | 1;
   };
 }
 
@@ -39,7 +45,22 @@ export const DEFAULT_CONFIG = {
   repo: { main_branch: "main" },
   editor: { name: "cursor" },
   setup: { commands: [] },
-  behavior: { navigate_after_grow: false },
+  behavior: {
+    navigate_after_grow: false,
+    post_creation_action: 1, // 0 = open editor, 1 = do nothing
+  },
+} as unknown as Partial<BonsaiConfig>;
+
+/**
+ * Migration defaults for existing configs. This is used to set legacy defaults
+ * for configs that existed before new options were introduced. For example,
+ * post_creation_action defaults to 0 (open editor) for existing configs to
+ * preserve the old behavior, but defaults to 1 (do nothing) for new configs.
+ */
+export const MIGRATION_DEFAULTS = {
+  behavior: {
+    post_creation_action: 0, // 0 = open editor (preserve legacy behavior)
+  },
 } as unknown as Partial<BonsaiConfig>;
 
 /**
@@ -74,13 +95,25 @@ function defaultsDeep(
 /**
  * Merge preset defaults into a partial config. Returns full config and whether
  * any keys were added (so caller can persist).
+ * @param parsed - The partial config to merge into
+ * @param isMigration - If true, merge MIGRATION_DEFAULTS first (for existing configs)
  */
-export function mergeConfigWithDefaults(parsed: Partial<BonsaiConfig> & Record<string, unknown>): {
+export function mergeConfigWithDefaults(
+  parsed: Partial<BonsaiConfig> & Record<string, unknown>,
+  isMigration = false
+): {
   config: BonsaiConfig;
   updated: boolean;
 } {
   const changed = { value: false };
   const merged = JSON.parse(JSON.stringify(parsed)) as Record<string, unknown>;
+
+  // For existing configs (migrations), apply migration defaults first to preserve legacy behavior
+  if (isMigration) {
+    defaultsDeep(merged, MIGRATION_DEFAULTS as Record<string, unknown>, changed);
+  }
+
+  // Then apply standard defaults for any still-missing keys
   defaultsDeep(merged, DEFAULT_CONFIG as Record<string, unknown>, changed);
   return {
     config: merged as unknown as BonsaiConfig,
@@ -142,7 +175,7 @@ export async function loadConfig(repoPath: string): Promise<BonsaiConfig | null>
 
   const content = await file.text();
   const parsed = parse(content) as unknown as Partial<BonsaiConfig> & Record<string, unknown>;
-  const { config, updated } = mergeConfigWithDefaults(parsed);
+  const { config, updated } = mergeConfigWithDefaults(parsed, true);
   if (updated) {
     await saveConfigToPath(configPath, config);
   }
@@ -246,7 +279,7 @@ export async function mergeDefaultsIntoAllConfigs(): Promise<void> {
     try {
       const parsed = loadConfigFromPathSync(configPath);
       if (!parsed?.repo?.path) continue;
-      const { config, updated } = mergeConfigWithDefaults(parsed);
+      const { config, updated } = mergeConfigWithDefaults(parsed, true);
       if (updated && config.repo?.path) {
         saveConfigToPathSync(configPath, config);
       }

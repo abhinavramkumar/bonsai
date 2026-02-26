@@ -103,6 +103,16 @@ export async function initCommand(): Promise<void> {
             "After 'bonsai grow', cd into the new worktree in this terminal? (requires shell integration)",
           initialValue: false,
         }),
+
+      postCreationAction: () =>
+        p.select({
+          message: "After creating a worktree, what should bonsai do?",
+          options: [
+            { value: 1, label: "Do nothing (default)", hint: "You navigate manually when ready" },
+            { value: 0, label: "Open editor", hint: "Immediately open the editor in new worktree" },
+          ],
+          initialValue: 1,
+        }),
     },
     {
       onCancel: () => {
@@ -142,6 +152,7 @@ export async function initCommand(): Promise<void> {
     },
     behavior: {
       navigate_after_grow: config.navigateAfterGrow === true,
+      post_creation_action: (config.postCreationAction as 0 | 1) ?? 1,
     },
   };
 
@@ -160,6 +171,8 @@ export async function initCommand(): Promise<void> {
 
   // Show summary
   const configPath = getConfigPath(config.repoPath as string);
+  const postCreationLabel = config.postCreationAction === 0 ? "open editor" : "do nothing";
+
   p.note(
     [
       `${pc.dim("Config file:")} ${configPath}`,
@@ -169,6 +182,7 @@ export async function initCommand(): Promise<void> {
       setupCommands.length > 0
         ? `${pc.dim("Setup commands:")} ${setupCommands.length} command(s)`
         : null,
+      `${pc.dim("Post-creation action:")} ${postCreationLabel}`,
       `${pc.dim("Navigate after grow:")} ${config.navigateAfterGrow ? "yes" : "no"} ${pc.dim("(cd into new worktree when using shell integration)")}`,
     ]
       .filter(Boolean)
