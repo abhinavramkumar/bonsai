@@ -6,147 +6,66 @@
 
 _Carefully cultivate your branches._
 
-One command to work on another branch—separate folder, deps, and editor. No stash, no conflict.
-
 [![Release](https://github.com/abhinavramkumar/bonsai/actions/workflows/release.yml/badge.svg)](https://github.com/abhinavramkumar/bonsai/actions/workflows/release.yml)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/abhinavramkumar/bonsai)](https://github.com/abhinavramkumar/bonsai/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
 
-A focused Git worktree CLI that creates a full environment per branch: a dedicated directory, your setup commands (e.g. `npm install`), and your editor. For when you need to switch context without touching your current work.
+Git worktree management CLI. Work on multiple branches simultaneously—no stash, no conflict.
 
-**Who it's for:** Developers juggling multiple branches, maintainers handling hotfixes, or anyone tired of the `git stash` dance.
+One command creates a worktree with its own directory, dependencies, and editor instance.
 
-## Features
-
-- **One command** — `bonsai grow <branch>` creates the worktree, runs setup, and opens your editor
-- **Isolated environments** — Each branch gets its own directory, dependencies, build artifacts, and editor state
-- **No stash needed** — Your current branch and editor stay untouched; no conflicts, no mental overhead
-- **Shell integration** — Tab-complete branches; `bonsai switch` to jump between worktrees instantly
-- **Flexible setup** — Configure per-repo setup commands that run automatically in new worktrees
-
-## Why bonsai?
-
-**The problem:** You're deep in a feature branch when an urgent bug comes in. The usual dance:
+## Quick Start
 
 ```bash
+# Install
+curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install.sh | sh
+
+# Setup
+cd ~/Projects/myapp
+bonsai init
+
+# Create worktree
+bonsai grow feature/auth
+# → Creates worktree, runs npm install, opens editor
+```
+
+## Why?
+
+You're deep in a feature when an urgent bug comes in:
+
+```bash
+# Without bonsai
 git stash
 git checkout main
 git pull
 git checkout -b hotfix/urgent
-# ... fix the bug ...
+# ... fix ...
 git checkout feature/my-work
-git stash pop
-# Hope nothing conflicts...
-```
+git stash pop  # 🤞
 
-**With bonsai:**
-
-```bash
+# With bonsai
 bonsai grow hotfix/urgent
-# Fix bug in a completely isolated environment
-# Your feature branch is untouched, editor still open
-bonsai prune hotfix/urgent
-
-# Or clean up multiple worktrees at once:
-bonsai prune  # Interactive multi-select
+# → Isolated environment, feature branch untouched
 ```
 
-Each worktree is a fully independent working directory. No stashing. No conflicts.
+## Core Commands
 
-## Installation
+| Command                 | Description                           |
+| ----------------------- | ------------------------------------- |
+| `bonsai init`           | Setup config for current repo         |
+| `bonsai grow <branch>`  | Create worktree + run setup + open    |
+| `bonsai prune [branch]` | Remove worktree(s) (multi-select)     |
+| `bonsai list`           | List worktrees                        |
+| `bonsai switch <name>`  | cd to worktree (requires completions) |
+| `bonsai open`           | Open current worktree in editor       |
+| `bonsai completions`    | Install shell integration             |
 
-**Quick install** (latest release binary):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install.sh | sh
-```
-
-Upgrade later: `bonsai upgrade`. Or download manually from [GitHub Releases](https://github.com/abhinavramkumar/bonsai/releases).
-
-**Homebrew (macOS/Linux):**
-
-```bash
-brew install abhinavramkumar/bonsai/bonsai
-```
-
-**From source** (requires [Bun](https://bun.sh)):
-
-```bash
-git clone https://github.com/abhinavramkumar/bonsai.git
-cd bonsai
-bun install
-bun run build
-sudo cp ./dist/bonsai /usr/local/bin/
-```
-
-**Shell integration** (recommended for tab completion and `bonsai switch`):
-
-```bash
-bonsai completions
-# Interactive setup — adds to ~/.zshrc or ~/.bashrc
-```
-
-Or add to your shell config: `eval "$(bonsai completions zsh)"` (or `bash`).
-
-## Quick start
-
-```bash
-cd ~/Projects/myapp
-bonsai init
-bonsai grow feature/auth
-```
-
-That fetches the branch, creates a worktree (e.g. `myapp.worktrees/feature-auth`), runs your setup commands, and opens your editor. Use `bonsai list`, `bonsai switch <name>` to jump between worktrees, `bonsai open` (or `bonsai bloom`) to open the current worktree in your configured editor, and `bonsai prune` when done.
-
-[Full command reference](#commands) below.
-
-## Commands
-
-| Command                        | Aliases                | Description                                                    |
-| ------------------------------ | ---------------------- | -------------------------------------------------------------- |
-| `bonsai init`                  |                        | Interactive setup wizard for current repo                      |
-| `bonsai grow <branch>`         | `add`, `new`           | Create worktree, run setup, open editor                        |
-| `bonsai prune [branch]`        | `rm`, `remove`         | Remove worktree(s) (interactive multi-select or single branch) |
-| `bonsai list`                  | `ls`                   | List all worktrees                                             |
-| `bonsai agent send [worktree]` | `dispatch`, `delegate` | Dispatch work to worktree with AI (OpenCode/Claude)            |
-| `bonsai agent status`          |                        | Show active AI sessions (telescope-like interface)             |
-| `bonsai switch <name>`         |                        | cd to worktree _(requires shell completions)_                  |
-| `bonsai open`                  | `bloom`                | Open current worktree in configured editor                     |
-| `bonsai setup`                 |                        | Re-run setup commands in current worktree                      |
-| `bonsai config`                |                        | Open config in `$EDITOR`                                       |
-| `bonsai completions`           |                        | Install shell integration                                      |
-| `bonsai upgrade`               |                        | Install or upgrade to latest release                           |
-
-### AI Workflow
-
-Dispatch work to worktrees in parallel using AI coding assistants:
-
-```bash
-# Dispatch task to a worktree
-bonsai agent send feature-auth "add unit tests for authentication"
-
-# Interactive worktree picker
-bonsai agent send
-
-# Show active sessions (telescope-like UI)
-bonsai agent status
-
-# Multi-line prompt via $EDITOR
-bonsai agent send feature-api --edit
-
-# Interactive mode (not background)
-bonsai agent send feature-auth --attach
-```
-
-**Supported AI tools:** OpenCode, Claude Code
-
-📖 **[Full AI Workflow Documentation](docs/AI_WORKFLOW.md)**
+See [docs/](docs/) for AI workflow, full reference, and examples.
 
 ## Configuration
 
-Config lives at `~/.config/bonsai/<repo-name>.toml` (XDG compliant). Edit with `bonsai config` or directly:
+Config: `~/.config/bonsai/<repo>.toml`
 
 ```toml
 [repo]
@@ -158,253 +77,47 @@ main_branch = "main"  # new worktrees are created from latest of this branch
 name = "cursor"  # cursor | vscode | claude | goland | rust-rover | webstorm | pycharm
 
 [setup]
-commands = [
-  "npm install",
-  "cp .env.example .env",
-  "npm run db:migrate"
-]
+commands = ["npm install", "cp .env.example .env"]
 
-# When true, your terminal will cd into the new worktree after \`bonsai grow\` (requires shell integration).
-# When false, you stay in your current directory; the editor still opens the new worktree.
 [behavior]
-navigate_after_grow = false
+navigate_after_grow = false  # when true, terminal cd's into worktree after grow (requires shell integration)
 ```
 
-Setup commands run sequentially in the new worktree (streamed output, fail-fast). Run `bonsai setup` to retry. See [Setup commands](#setup-commands) for more examples.
-
-**Terminal vs. editor:** By default, after `bonsai grow` your terminal stays in the current branch; only the editor opens the new worktree. Set `[behavior] navigate_after_grow = true` if you want the shell to cd into the new worktree automatically (requires [shell integration](#shell-integration)).
+Edit: `bonsai config`
 
 ---
 
-## Reference
+## Installation
 
-### How `grow` works
-
-**TL;DR:** You run `bonsai grow <branch>` once; bonsai creates a separate folder for that branch, runs your setup (e.g. `npm install`), and opens your editor. You don't run git worktree or IDE setup yourself - the steps below are what bonsai does automatically.
-
-When you run `bonsai grow feature/auth`:
-
-1. **Validates** the branch name (rejects invalid characters, names starting with `-`)
-2. **Fetches** latest from remote (`git fetch --all --prune`)
-3. **Detects** branch status: remote-only → tracks `origin/...`, existing local → uses it, else creates from current HEAD
-4. **Checks** if branch is already checked out elsewhere (errors or offers to prune stale refs)
-5. **Creates** the worktree at `<worktree_base>/feature-auth`
-6. **Opens** your configured editor
-7. **Runs** setup commands sequentially (stops on first failure)
-
-### How `prune` works
-
-**TL;DR:** When you're done with worktrees, run `bonsai prune` for interactive multi-select, or `bonsai prune <branch>` for a single worktree. Bonsai removes worktree folders safely (prompts if you have uncommitted changes). The branch stays in git - only the extra working directory is removed.
-
-#### Interactive multi-select mode
-
-When you run `bonsai prune` (no arguments):
-
-1. **Lists** all worktrees with status indicators (clean/dirty)
-2. **Shows** fzf-like multi-select interface to choose worktrees
-3. **Processes** each selected worktree individually:
-   - Checks for uncommitted changes
-   - Shows changed files and asks for confirmation if dirty
-   - Removes the worktree with appropriate force flag
-4. **Reports** summary of successful/failed operations
-
-#### Single branch mode
-
-When you run `bonsai prune feature/auth`:
-
-1. **Finds** the worktree at `<worktree_base>/feature-auth`
-2. **Checks** for uncommitted changes (`git status --porcelain`)
-3. **If dirty:** Shows changed files and asks for confirmation
-4. **Removes** the worktree (`git worktree remove`)
-
-The branch itself is **not deleted** — only the worktree directory.
-
-### Setup commands
-
-- **Streamed output** with colors preserved
-- **Fail-fast** — stops on first non-zero exit code
-- **Retryable** — run `bonsai setup` to retry after fixing issues
-- Compound commands (`cmd1; cmd2`) fail properly
-
-Examples:
-
-```toml
-# Node.js
-commands = ["npm install", "npm run build"]
-
-# Python
-commands = ["python -m venv .venv", "source .venv/bin/activate && pip install -e ."]
-
-# Monorepo
-commands = [
-  "npm install",
-  "cd packages/frontend && npm install",
-  "cd packages/backend && pip install -r requirements.txt"
-]
-
-# Env files
-commands = ["cp .env.example .env", "cp .env.test.example .env.test"]
-```
-
-### Branch → folder mapping
-
-Branch names are sanitized for folder names (slashes → dashes):
-
-| Branch                | Folder                |
-| --------------------- | --------------------- |
-| `feature/user-auth`   | `feature-user-auth`   |
-| `hotfix/critical-bug` | `hotfix-critical-bug` |
-| `release/v2.0`        | `release-v2.0`        |
-| `my-branch`           | `my-branch`           |
-
-### Supported editors
-
-| Editor      | CLI Command  | Config Value |
-| ----------- | ------------ | ------------ |
-| Cursor      | `cursor`     | `cursor`     |
-| VS Code     | `code`       | `vscode`     |
-| Claude Code | `claude`     | `claude`     |
-| GoLand      | `goland`     | `goland`     |
-| RustRover   | `rust-rover` | `rust-rover` |
-| WebStorm    | `webstorm`   | `webstorm`   |
-| PyCharm     | `pycharm`    | `pycharm`    |
-
-The editor opens immediately after worktree creation (doesn't wait for setup to complete).
-
-### Shell integration
-
-Running `bonsai completions` adds:
-
-- **Tab completion** for all commands
-- **Branch completion** for `grow` (local and remote)
-- **Worktree completion** for `prune` (single branch mode) and `switch`
-- **`bonsai switch`** to cd into worktrees (requires shell integration; a subprocess can't change the parent shell's directory)
-- **Optional: cd after `grow`** — if `[behavior] navigate_after_grow = true`, the shell will cd into the new worktree after a successful `bonsai grow` so your terminal session follows the new branch
+**Binary:**
 
 ```bash
-bonsai grow feat<TAB>   # completes to feature/...
-bonsai prune <TAB>      # shows existing worktrees
-bonsai switch <TAB>      # shows existing worktrees
+curl -fsSL https://raw.githubusercontent.com/abhinavramkumar/bonsai/main/install.sh | sh
 ```
 
-### Example workflow
+**Homebrew:**
 
 ```bash
-# Morning: start feature work
-cd ~/Projects/myapp
-bonsai grow feature/payments
-
-# Afternoon: urgent hotfix
-bonsai grow hotfix/security-fix
-# New editor window; feature worktree untouched
-
-# Fix bug, commit, push, merge...
-bonsai prune hotfix/security-fix
-
-# Or clean up multiple worktrees at once
-bonsai prune     # Interactive multi-select interface
-
-# Back to feature (with shell completions)
-bonsai switch feature-payments
-bonsai open     # or bonsai bloom — open current worktree in configured editor
+brew install abhinavramkumar/bonsai/bonsai
 ```
 
-### Edge cases
+**From source:**
 
-**Branch already checked out elsewhere**
-
-```
-Branch feature/auth is already checked out at:
-  /Users/you/Projects/myapp.worktrees/feature-auth
-
-Either use that worktree or check out a different branch there first.
+```bash
+git clone https://github.com/abhinavramkumar/bonsai.git
+cd bonsai
+bun install && bun run build
+sudo cp ./dist/bonsai /usr/local/bin/
 ```
 
-**Stale worktree reference** (directory deleted manually)
+**Shell completions:**
 
+```bash
+bonsai completions  # Interactive setup
 ```
-Branch feature/auth has a stale worktree reference at:
-  .../myapp.worktrees/old-path (directory no longer exists)
-
-? Prune stale worktree references and continue? (Y/n)
-```
-
-**Multi-select prune interface**
-
-```
-Select worktrees to remove:
-◆  feature-auth      clean
-◆  hotfix-bug        dirty (2 files)
-◆  release-v2        clean
-```
-
-**Uncommitted changes on prune**
-
-```
-Uncommitted changes detected:
-  modified   src/index.ts
-  added      src/new-file.ts
-  untracked  temp.log
-
-? Force delete worktree with 3 uncommitted change(s)? (y/N)
-```
-
-### Tips
-
-- **Keep worktree base outside your repo** — Default `<repo>.worktrees` keeps things organized.
-- **Use descriptive branch names** — They become folder names; `bonsai list` stays readable.
-- **Add `.worktrees` to global gitignore** — Avoid accidentally committing worktree dirs.
-- **Setup commands should be idempotent** — They may run again via `bonsai setup`.
 
 ---
 
-## Development
+**Requirements:** macOS/Linux, Git 2.5+
 
-```bash
-bun run dev -- --help    # Run without compiling
-bun run build            # Compile to ./dist/bonsai
-bun run typecheck        # Type check
-bun run format           # Format with Prettier
-bun run format:check     # Check formatting
-bun run hooks:install   # Install git pre-commit hook
-bun run link             # Symlink to /usr/local/bin (for testing)
-bun run unlink           # Remove symlink
-```
-
-Debug upgrade flow: `BONSAI_UPGRADE_DEBUG=1 bonsai upgrade`
-
-**Git hooks:** Pre-commit hook formats staged files. Install: `bun run hooks:install` or `./scripts/install-hooks.sh`.
-
-**Architecture:**
-
-```
-src/
-  cli.ts              # Entry point, command routing
-  commands/
-    init.ts           # Interactive setup wizard
-    grow.ts           # Create worktree + setup + editor
-    prune.ts          # Remove worktree(s) with multi-select and safety checks
-    list.ts           # List worktrees
-    open.ts           # Open current worktree in configured editor
-    setup.ts          # Re-run setup commands
-    config.ts         # Open config in $EDITOR
-    completions.ts    # Shell integration (zsh/bash)
-  lib/
-    config.ts         # TOML config management
-    git.ts            # Git operations
-    editor.ts         # Editor launching
-    runner.ts         # Command execution with streaming
-```
-
-## Requirements
-
-| Requirement | Details                                                            |
-| ----------- | ------------------------------------------------------------------ |
-| **OS**      | macOS, Linux                                                       |
-| **Git**     | 2.5+ (worktree support)                                            |
-| **Runtime** | [Bun](https://bun.sh) (for building from source)                   |
-| **Editor**  | Cursor, VS Code, Claude Code, GoLand, RustRover, WebStorm, PyCharm |
-
-## License
-
-MIT
+**License:** MIT — See [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md)
