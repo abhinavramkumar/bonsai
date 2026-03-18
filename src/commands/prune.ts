@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { join, basename } from "path";
 import { stat } from "fs/promises";
-import { findConfigForCwd } from "../lib/config.js";
+import { findConfigForCwd, type BonsaiConfig } from "../lib/config.js";
 import {
   removeWorktree,
   sanitizeBranchName,
@@ -11,6 +11,7 @@ import {
   listWorktrees,
   validateBranchName,
 } from "../lib/git.js";
+import { runCommandWithLogs } from "../lib/runner.js";
 
 /**
  * Result of pruning a worktree
@@ -157,6 +158,9 @@ export async function pruneCommand(branchName?: string): Promise<void> {
     forceDelete = true;
   }
 
+  // Run teardown commands before removing
+  await runTeardownCommands(config, worktreePath);
+
   // Remove worktree
   const removeSpinner = p.spinner();
   removeSpinner.start("Removing worktree");
@@ -188,7 +192,7 @@ export async function pruneCommand(branchName?: string): Promise<void> {
 /**
  * Show multi-select interface and prune multiple worktrees
  */
-async function pruneMultipleWorktrees(config: any): Promise<void> {
+async function pruneMultipleWorktrees(config: BonsaiConfig): Promise<void> {
   // Get all worktrees
   const worktrees = await listWorktrees();
 
@@ -267,7 +271,7 @@ async function pruneMultipleWorktrees(config: any): Promise<void> {
   // Process each selected worktree
   const results: PruneResult[] = [];
   for (const worktreePath of selectedWorktrees) {
-    await pruneSingleWorktree(worktreePath, basename(worktreePath), results);
+    await pruneSingleWorktree(config, worktreePath, basename(worktreePath), results);
   }
 
   // Show summary
@@ -296,6 +300,7 @@ async function pruneMultipleWorktrees(config: any): Promise<void> {
  * Prune a single worktree (extracted from original logic)
  */
 async function pruneSingleWorktree(
+  config: BonsaiConfig,
   worktreePath: string,
   worktreeName: string,
   results: PruneResult[]
@@ -390,6 +395,9 @@ async function pruneSingleWorktree(
       forceDelete = true;
     }
 
+    // Run teardown commands before removing
+    await runTeardownCommands(config, worktreePath);
+
     // Remove worktree
     const removeSpinner = p.spinner();
     removeSpinner.start("Removing worktree");
@@ -408,5 +416,37 @@ async function pruneSingleWorktree(
     p.log.error(
       `Failed to remove ${worktreeName}: ${error instanceof Error ? error.message : String(error)}`
     );
+  }
+}
+
+/**
+ * Run teardown commands from the worktree directory before removing it.
+ * Failures are logged as warnings but do not block worktree removal.
+ */
+async function runTeardownCommands(config: BonsaiConfig, worktreePath: string): Promise<void> {
+  const commands = config.teardown?.commands ?? [];
+  if (commands.length === 0) return;
+
+  console.log();
+  console.log(pc.bold(`Running ${commands.length} teardown command(s)...`));
+  console.log(pc.dim(`Working directory: ${worktreePath}`));
+  console.log();
+
+  for (let i = 0; i < commands.length; i++) {
+    const cmd = commands[i]!;
+    console.log(pc.cyan(`━━━ [${i + 1}/${commands.length}] `) + pc.bold(cmd) + pc.cyan(` ━━━`));
+    console.log();
+
+    const result = await runCommandWithLogs(cmd, worktreePath);
+
+    console.log();
+    if (result.success) {
+      console.log(pc.green(`✓ Teardown command completed successfully`));
+    } else {
+      console.log(
+        pc.yellow(`⚠ Teardown command failed with exit code ${result.exitCode} (continuing)`)
+      );
+    }
+    console.log();
   }
 }
