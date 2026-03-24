@@ -15,11 +15,17 @@ import {
 import { openInEditor, getEditorDisplayName } from "../lib/editor.js";
 import { runCommandWithLogs } from "../lib/runner.js";
 
+export interface GrowOptions {
+  /** Skip running setup commands after creating the worktree */
+  skipSetup?: boolean;
+}
+
 /**
  * Create a new worktree for a branch
  * @param branchName - The branch name to create worktree for
+ * @param options - Optional flags for controlling grow behavior
  */
-export async function growCommand(branchName: string): Promise<void> {
+export async function growCommand(branchName: string, options: GrowOptions = {}): Promise<void> {
   p.intro(pc.bgGreen(pc.black(" bonsai grow ")));
 
   if (!branchName) {
@@ -146,9 +152,11 @@ export async function growCommand(branchName: string): Promise<void> {
   const editorName = config.editor.name;
   const editorDisplayName = getEditorDisplayName(editorName);
 
-  // Check post-creation action: 0 = open editor, 1 = do nothing
-  const postCreationAction = config.behavior?.post_creation_action ?? 0;
-  const shouldOpenEditor = postCreationAction === 0;
+  // Check post-creation action
+  const postCreationAction = config.behavior?.post_creation_action ?? "open-editor";
+  // Support legacy numeric values (0 = open editor) for old configs not yet migrated
+  const shouldOpenEditor =
+    postCreationAction === "open-editor" || (postCreationAction as unknown) === 0;
 
   // Open editor immediately (don't wait for setup) - only if configured
   if (shouldOpenEditor) {
@@ -175,10 +183,12 @@ export async function growCommand(branchName: string): Promise<void> {
 
   p.note(summaryLines.join("\n"), "Worktree created");
 
-  // Run setup commands if configured
+  // Run setup commands if configured (skip with --no-setup)
   let setupFailed = false;
 
-  if (setupCommands.length > 0) {
+  if (options.skipSetup && setupCommands.length > 0) {
+    p.log.info(pc.dim("Skipping setup commands (--no-setup)"));
+  } else if (setupCommands.length > 0) {
     console.log();
     console.log(
       pc.bgYellow(pc.black(" SETUP RUNNING ")) +

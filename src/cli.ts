@@ -43,6 +43,7 @@ ${pc.bold("Usage:")}
 ${pc.bold("Commands:")}
   ${pc.cyan("init")}              Initialize bonsai for current repository
   ${pc.cyan("grow")} <branch>     Create a worktree for a branch ${pc.dim("(alias: add, new)")}
+                        ${pc.dim("--no-setup  Skip running setup commands")}
   ${pc.cyan("prune")} [branch]    Remove a worktree ${pc.dim("(alias: rm, remove)")}
   ${pc.cyan("list")}              List all worktrees ${pc.dim("(alias: ls)")}
   ${pc.cyan("switch")} <name>     Switch to a worktree ${pc.dim("(requires shell completions)")}
@@ -65,6 +66,9 @@ ${pc.bold("Examples:")}
 
   ${pc.dim("# Create a worktree from an existing remote branch")}
   $ bonsai grow hotfix/critical-bug
+
+  ${pc.dim("# Create a worktree without running setup commands")}
+  $ bonsai grow --no-setup feature/quick-fix
 
   ${pc.dim("# Remove a worktree (checks for uncommitted changes)")}
   $ bonsai prune feature/user-auth
@@ -120,13 +124,15 @@ async function main(): Promise<void> {
     case "grow":
     case "add":
     case "new": {
-      const branchName = args[1];
+      const growArgs = args.slice(1);
+      const noSetup = growArgs.includes("--no-setup");
+      const branchName = growArgs.find((a) => !a.startsWith("--"));
       if (!branchName) {
-        p.cancel("Missing branch name. Usage: bonsai grow <branch-name>");
+        p.cancel("Missing branch name. Usage: bonsai grow [--no-setup] <branch-name>");
         process.exit(1);
       }
       const { growCommand } = await import("./commands/grow.js");
-      await growCommand(branchName);
+      await growCommand(branchName, { skipSetup: noSetup });
       break;
     }
 

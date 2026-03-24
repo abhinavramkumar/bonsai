@@ -66,6 +66,13 @@ fi
 - Run sequentially, stop on first failure
 - Stream output with `stdout: "inherit"` (preserves colors)
 - Don't set `FORCE_COLOR=1` - causes OSC 8 hyperlink underlines in npm/yarn
+- `bonsai grow --no-setup <branch>` skips setup entirely (useful for agents/CI)
+
+### Config Comments
+- Config files include `#` comments above each field explaining its purpose
+- `stringifyWithComments()` in `lib/config.ts` post-processes `smol-toml` output
+- Comments are re-added on every save, so they stay in sync with the code
+- Add new field comments to `CONFIG_COMMENTS` map when adding config options
 
 ## Dependencies
 - `@clack/prompts` - Interactive CLI UI

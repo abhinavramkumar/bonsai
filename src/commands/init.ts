@@ -108,10 +108,18 @@ export async function initCommand(): Promise<void> {
         p.select({
           message: "After creating a worktree, what should bonsai do?",
           options: [
-            { value: 1, label: "Do nothing (default)", hint: "You navigate manually when ready" },
-            { value: 0, label: "Open editor", hint: "Immediately open the editor in new worktree" },
+            {
+              value: "none",
+              label: "Do nothing (default)",
+              hint: "You navigate manually when ready",
+            },
+            {
+              value: "open-editor",
+              label: "Open editor",
+              hint: "Immediately open the editor in new worktree",
+            },
           ],
-          initialValue: 1,
+          initialValue: "none",
         }),
     },
     {
@@ -152,7 +160,7 @@ export async function initCommand(): Promise<void> {
     },
     behavior: {
       navigate_after_grow: config.navigateAfterGrow === true,
-      post_creation_action: (config.postCreationAction as 0 | 1) ?? 1,
+      post_creation_action: (config.postCreationAction as "open-editor" | "none") ?? "none",
     },
   };
 
@@ -171,7 +179,8 @@ export async function initCommand(): Promise<void> {
 
   // Show summary
   const configPath = getConfigPath(config.repoPath as string);
-  const postCreationLabel = config.postCreationAction === 0 ? "open editor" : "do nothing";
+  const postCreationLabel =
+    config.postCreationAction === "open-editor" ? "open editor" : "do nothing";
 
   p.note(
     [

@@ -32,10 +32,10 @@ export interface BonsaiConfig {
     navigate_after_grow?: boolean;
     /**
      * What to do after creating a new worktree via `bonsai grow`:
-     * 0 = open editor (legacy default for existing configs)
-     * 1 = do nothing (new default for fresh installs)
+     * "open-editor" = launch configured editor in the new worktree
+     * "none" = do nothing (user navigates manually)
      */
-    post_creation_action?: 0 | 1;
+    post_creation_action?: "open-editor" | "none";
   };
 }
 
@@ -52,19 +52,19 @@ export const DEFAULT_CONFIG = {
   teardown: { commands: [] },
   behavior: {
     navigate_after_grow: false,
-    post_creation_action: 1, // 0 = open editor, 1 = do nothing
+    post_creation_action: "none",
   },
 } as unknown as Partial<BonsaiConfig>;
 
 /**
  * Migration defaults for existing configs. This is used to set legacy defaults
  * for configs that existed before new options were introduced. For example,
- * post_creation_action defaults to 0 (open editor) for existing configs to
- * preserve the old behavior, but defaults to 1 (do nothing) for new configs.
+ * post_creation_action defaults to "open-editor" for existing configs to
+ * preserve the old behavior, but defaults to "none" for new configs.
  */
 export const MIGRATION_DEFAULTS = {
   behavior: {
-    post_creation_action: 0, // 0 = open editor (preserve legacy behavior)
+    post_creation_action: "open-editor", // preserve legacy behavior
   },
 } as unknown as Partial<BonsaiConfig>;
 
@@ -112,6 +112,13 @@ export function mergeConfigWithDefaults(
 } {
   const changed = { value: false };
   const merged = JSON.parse(JSON.stringify(parsed)) as Record<string, unknown>;
+
+  // Migrate legacy numeric post_creation_action to string enum
+  const behavior = merged.behavior as Record<string, unknown> | undefined;
+  if (behavior && typeof behavior.post_creation_action === "number") {
+    behavior.post_creation_action = behavior.post_creation_action === 0 ? "open-editor" : "none";
+    changed.value = true;
+  }
 
   // For existing configs (migrations), apply migration defaults first to preserve legacy behavior
   if (isMigration) {
@@ -198,12 +205,67 @@ export async function saveConfig(config: BonsaiConfig): Promise<void> {
 }
 
 /**
+ * Comment map for TOML config fields. Keys are either section headers like
+ * "[repo]" or field names like "path", "worktree_base", etc.
+ * Comments are injected above matching lines when serializing.
+ */
+const CONFIG_COMMENTS: Record<string, string> = {
+  "[repo]": "# Repository settings",
+  path: "# Absolute path to the main git repository",
+  worktree_base: "# Directory where worktrees are created (e.g. /path/to/repo.worktrees)",
+  main_branch: "# Branch to base new worktrees on (fetches latest before creating)",
+  "[editor]": "# Editor to open worktrees in",
+  name: "# Editor CLI name: cursor, vscode, claude",
+  "[setup]": "# Commands to run after creating a new worktree",
+  "[teardown]": "# Commands to run before removing a worktree",
+  "[behavior]": "# Behavior flags that control what happens after bonsai grow",
+  navigate_after_grow:
+    "# When true, shell integration will cd into the new worktree (requires eval'd completions)",
+  post_creation_action: '# After creating a worktree: "open-editor" | "none"',
+};
+
+/**
+ * Serialize a config object to TOML with human-readable comments above each field.
+ */
+function stringifyWithComments(config: BonsaiConfig): string {
+  const raw = stringify(config);
+  const lines = raw.split("\n");
+  const out: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Check for section header like [repo]
+    if (trimmed.startsWith("[") && CONFIG_COMMENTS[trimmed]) {
+      // Add blank line before sections (except the very first)
+      if (out.length > 0) out.push("");
+      out.push(CONFIG_COMMENTS[trimmed]);
+      out.push(line);
+      continue;
+    }
+
+    // Check for key = value
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx > 0) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      if (CONFIG_COMMENTS[key]) {
+        out.push(CONFIG_COMMENTS[key]);
+      }
+    }
+
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
+/**
  * Save config to a specific path. Used when merging defaults into all configs.
  */
 export async function saveConfigToPath(path: string, config: BonsaiConfig): Promise<void> {
   const configDir = getBonsaiConfigDir();
   await mkdir(configDir, { recursive: true });
-  const content = stringify(config);
+  const content = stringifyWithComments(config);
   await Bun.write(path, content);
 }
 
@@ -267,7 +329,7 @@ function loadConfigFromPathSync(
 function saveConfigToPathSync(path: string, config: BonsaiConfig): void {
   const configDir = getBonsaiConfigDir();
   mkdirSync(configDir, { recursive: true });
-  const content = stringify(config);
+  const content = stringifyWithComments(config);
   writeFileSync(path, content, "utf-8");
 }
 
